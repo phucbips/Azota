@@ -51,7 +51,6 @@
     }
   ],
   "env": {
-    "SKIP_PREFLIGHT_CHECK": "true",
-    "FIREBASE_SERVICE_ACCOUNT_KEY": "@firebase-service-account-key"
+    "SKIP_PREFLIGHT_CHECK": "true"
   }
 }
