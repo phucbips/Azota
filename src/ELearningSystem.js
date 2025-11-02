@@ -54,8 +54,11 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 // ⚡️ ĐÃ XÓA: const functions = getFunctions(app);
 
-// ⚡️ MỚI: Thêm URL API Vercel của bạn
-const VERCEL_API_URL = "https://payos-proxy.vercel.app"; 
+// ⚡️ MỚI: Thêm URL API Vercel của bạn - Sử dụng environment variable
+const VERCEL_API_URL = process.env.REACT_APP_API_URL || 
+  (process.env.NODE_ENV === 'production' 
+    ? window.location.origin 
+    : 'http://localhost:3000'); 
 
 // =====================================================
 // Utility Functions
