@@ -70,18 +70,6 @@ const formatCurrency = (amount) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
 
-const generateAccessKey = (length = 12) => {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let result = '';
-  for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-    if ((i + 1) % 4 === 0 && i + 1 < length) {
-      result += '-'; // Thêm dấu gạch ngang cho dễ đọc
-    }
-  }
-  return result;
-};
-
 // ⚡️ MỚI: Tách hàm tính tổng ra ngoài để dùng chung
 const calculateCartTotal = (cart, subjects, courses) => {
   const subjectsTotal = cart.subjects.reduce((sum, subjectId) => {
@@ -2464,9 +2452,9 @@ const OrderManager = ({ orders, users }) => {
 // Main Admin Dashboard
 const AdminDashboard = ({ user, onLogout }) => {
   const { role } = useContext(AppContext);
-  const { subjects, courses, quizzes, loading: loadingData, error: dataError } = useContext(DataContext);
+  const { subjects, courses, quizzes, loading: loadingData } = useContext(DataContext);
   // ⚡️ THAY ĐỔI: Lấy thêm 'orders' từ hook
-  const { users, transactions, orders, loading: loadingAdmin, error: adminError } = useAdminData(role);
+  const { users, transactions, orders, loading: loadingAdmin } = useAdminData(role);
   
   const [view, setView] = useState('users');
   
