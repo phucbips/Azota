@@ -3,15 +3,15 @@
   "version": "1.0.0",
   "description": "API Backend for E-Learning System",
   "main": "createAccessKey.js",
-  "type": "module",  // ← THÊM VÀO
+  "type": "module",
   "directories": {
     "lib": "lib"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "dependencies": {  // ← THÊM VÀO
-    "firebase-admin": "^11.0.0"  // ← THÊM VÀO
+  "dependencies": {
+    "firebase-admin": "^11.0.0"
   },
   "author": "",
   "license": "ISC"
