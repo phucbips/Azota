@@ -1,4 +1,4 @@
-import { db, auth } from './lib/firebaseAdmin.js';
+import { db, auth, isFirebaseReady } from './lib/firebaseAdmin.js';
 import admin from 'firebase-admin'; // Cần cho FieldValue
 
 // Hàm tạo Key ngẫu nhiên
@@ -32,6 +32,15 @@ export default async function handler(req, res) {
   }
 
   try {
+    // --- 0. Kiểm tra Firebase ---
+    if (!isFirebaseReady()) {
+      return res.status(503).json({ 
+        success: false, 
+        message: 'Firebase service chưa sẵn sàng. Vui lòng kiểm tra environment variables.',
+        code: 'FIREBASE_NOT_READY'
+      });
+    }
+
     // --- 1. Xác thực Admin ---
     const authorization = req.headers.authorization;
     const token = authorization?.split('Bearer ')[1];
