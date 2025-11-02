@@ -1,13 +1,17 @@
 {
   "name": "api",
   "version": "1.0.0",
-  "description": "",
+  "description": "API Backend for E-Learning System",
   "main": "createAccessKey.js",
+  "type": "module",  // ← THÊM VÀO
   "directories": {
     "lib": "lib"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {  // ← THÊM VÀO
+    "firebase-admin": "^11.0.0"  // ← THÊM VÀO
   },
   "author": "",
   "license": "ISC"
