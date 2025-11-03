@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===== HELPER FUNCTIONS =====
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+    
+    function isTeacher() {
+      return isAuthenticated() && request.auth.token.role == 'teacher';
+    }
+    
+    function isStudent() {
+      return isAuthenticated() && request.auth.token.role == 'student';
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // ===== USER MANAGEMENT =====
+    match /users/{userId} {
+      // Tất cả authenticated users có thể đọc thông tin cơ bản của mình
+      allow get, list: if isAuthenticated();
+      
+      // Chỉ admin có thể list tất cả users
+      allow list: if isAdmin();
+      
+      // User có thể đọc thông tin của chính mình
+      allow get: if isOwner(userId);
+      
+      // User có thể cập nhật thông tin của chính mình (trừ role)
+      allow update: if isOwner(userId) && !('role' in request.resource.data.diff(resource.data).affectedKeys());
+      
+      // Chỉ admin có thể cập nhật role của user
+      allow update: if isAdmin() && 'role' in request.resource.data.diff(resource.data).affectedKeys();
+      
+      // User mới có thể tạo profile của mình
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      
+      // Chỉ admin có thể xóa user
+      allow delete: if isAdmin();
+    }
+    
+    // ===== SUBJECTS (MÔN HỌC) =====
+    match /subjects/{subjectId} {
+      // Mọi authenticated user có thể đọc danh sách môn học
+      allow get, list: if isAuthenticated();
+      
+      // Chỉ admin và teacher có thể quản lý môn học
+      allow create, update, delete: if isAdmin() || isTeacher();
+    }
+    
+    // ===== COURSES (KHÓA HỌC) =====
+    match /courses/{courseId} {
+      // Mọi authenticated user có thể đọc thông tin khóa học
+      allow get, list: if isAuthenticated();
+      
+      // Chỉ admin và teacher có thể quản lý khóa học
+      allow create, update, delete: if isAdmin() || isTeacher();
+      
+      // Chỉ admin có thể thay đổi giá khóa học
+      allow update: if (isAdmin() || isTeacher()) && !('price' in request.resource.data.diff(resource.data).affectedKeys());
+      allow update: if isAdmin() && ('price' in request.resource.data.diff(resource.data).affectedKeys());
+    }
+    
+    // ===== QUIZZES (BÀI KIỂM TRA) =====
+    match /quizzes/{quizId} {
+      // Mọi authenticated user có thể đọc quiz
+      allow get, list: if isAuthenticated();
+      
+      // Chỉ admin và teacher có thể tạo, chỉnh sửa quiz
+      allow create, update, delete: if isAdmin() || isTeacher();
+      
+      // Teacher chỉ có thể chỉnh sửa quiz của mình
+      allow update, delete: if isTeacher() && resource.data.createdBy == request.auth.uid;
+      
+      // Chỉ admin có thể xóa quiz
+      allow delete: if isAdmin();
+    }
+    
+    // ===== ORDERS (ĐƠN HÀNG) =====
+    match /orders/{orderId} {
+      // Admin có thể quản lý tất cả đơn hàng
+      allow get, list: if isAdmin();
+      
+      // Student có thể xem đơn hàng của mình
+      allow get: if isStudent() && resource.data.userId == request.auth.uid;
+      allow list: if isStudent() && request.query.filters.size() == 1 && 
+        request.query.filters[0].fieldPath == 'userId' && 
+        request.query.filters[0].op == 'EQUAL' && 
+        request.query.filters[0].value == request.auth.uid;
+      
+      // Student có thể tạo đơn hàng mới
+      allow create: if isStudent() && request.resource.data.userId == request.auth.uid;
+      
+      // Chỉ admin có thể cập nhật trạng thái đơn hàng
+      allow update: if isAdmin();
+      
+      // Chỉ admin có thể xóa đơn hàng
+      allow delete: if isAdmin();
+    }
+    
+    // ===== TRANSACTIONS (GIAO DỊCH) =====
+    match /transactions/{transactionId} {
+      // Chỉ admin có thể xem tất cả giao dịch
+      allow get, list: if isAdmin();
+      
+      // Admin có thể tạo giao dịch (cho việc thanh toán)
+      allow create: if isAdmin();
+      
+      // Chỉ admin có thể cập nhật giao dịch
+      allow update: if isAdmin();
+      
+      // Chỉ admin có thể xóa giao dịch
+      allow delete: if isAdmin();
+    }
+    
+    // ===== ACCESS KEYS (MÃ TRUY CẬP) =====
+    match /accessKeys/{keyId} {
+      // Chỉ admin có thể quản lý access keys
+      allow get, list: if isAdmin();
+      
+      // Admin có thể tạo access keys
+      allow create: if isAdmin();
+      
+      // Admin có thể cập nhật access keys
+      allow update: if isAdmin();
+      
+      // Chỉ admin có thể xóa access keys
+      allow delete: if isAdmin();
+      
+      // Student có thể kiểm tra access key hợp lệ (read-only check)
+      allow get: if isStudent() && resource.data.status == 'active';
+    }
+    
+    // ===== QUIZ RESPONSES (CÂU TRẢ LỜI) =====
+    match /quizResponses/{responseId} {
+      // Student có thể xem response của mình
+      allow get: if isStudent() && resource.data.userId == request.auth.uid;
+      
+      // Student có thể tạo response mới cho quiz của mình
+      allow create: if isStudent() && request.resource.data.userId == request.auth.uid;
+      
+      // Student có thể cập nhật response chưa submit
+      allow update: if isStudent() && 
+        resource.data.userId == request.auth.uid && 
+        resource.data.submitted == false;
+      
+      // Chỉ admin và teacher có thể xem tất cả responses
+      allow list: if isAdmin() || isTeacher();
+      
+      // Chỉ admin và teacher có thể đọc chi tiết response để chấm điểm
+      allow get: if isAdmin() || isTeacher();
+    }
+    
+    // ===== USER PROGRESS (TIẾN ĐỘ HỌC TẬP) =====
+    match /userProgress/{progressId} {
+      // User có thể xem tiến độ của mình
+      allow get: if isOwner(resource.data.userId);
+      
+      // User có thể cập nhật tiến độ của mình
+      allow update: if isOwner(resource.data.userId);
+      
+      // Chỉ admin và teacher có thể xem tất cả tiến độ
+      allow list: if isAdmin() || isTeacher();
+    }
+    
+    // ===== ANNOUNCEMENTS (THÔNG BÁO) =====
+    match /announcements/{announcementId} {
+      // Mọi authenticated user có thể đọc thông báo
+      allow get, list: if isAuthenticated();
+      
+      // Chỉ admin và teacher có thể tạo, chỉnh sửa thông báo
+      allow create, update, delete: if isAdmin() || isTeacher();
+    }
+    
+    // ===== SYSTEM CONFIG (CẤU HÌNH HỆ THỐNG) =====
+    match /systemConfig/{configId} {
+      // Chỉ admin có thể quản lý cấu hình hệ thống
+      allow get: if isAuthenticated(); // Cho phép đọc config công khai
+      allow list, create, update, delete: if isAdmin();
+    }
+    
+    // ===== FALLBACK - DENY ALL =====
+    match /{document=**} {
+      // Từ chối truy cập cho tất cả collection khác
+      allow read, write: if false;
+    }
+  }
+}

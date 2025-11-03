@@ -1,5 +1,27 @@
-import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
+import React, { useState, useEffect, createContext, useContext, useMemo, useCallback, useRef } from 'react';
 import { Sparkles, BookOpen, Users, BarChart3, LogOut, ShoppingCart, Plus, Trash2, AlertCircle, CheckCircle2, XCircle, Trophy, Clock, Eye, Play, Home, Key, CreditCard, Package, GraduationCap, Settings, Shield, Edit, Save, X, MoreVertical, ChevronDown, UserPlus, Lock, Mail, Server, Loader2, BrainCircuit, Send, Ticket } from 'lucide-react';
+
+// Import Error Boundary and Loading Components
+import ErrorBoundary from './components/ErrorBoundary';
+import { 
+  GlobalLoader, 
+  InlineLoader, 
+  CardSkeleton, 
+  TableSkeleton, 
+  FormSkeleton,
+  QuizCardSkeleton,
+  UserDashboardSkeleton,
+  ProgressBar,
+  StepProgress,
+  DotsLoader
+} from './components/LoadingComponents';
+
+// Import validation hooks
+import { useFormValidation, useErrorHandler, useLoadingState, useAsyncOperation } from './hooks/useFormValidation';
+import { validationSchemas } from './utils/validation';
+
+// Import Toast Manager
+import ToastManager from './components/Toast';
 
 // =====================================================
 // Firebase SDK Imports
@@ -31,34 +53,128 @@ import {
   arrayUnion,
   arrayRemove,
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  limit,
+  orderBy,
+  startAfter,
+  endBefore,
+  enableNetwork,
+  disableNetwork,
+  getDocs
 } from "firebase/firestore";
 // ⚡️ ĐÃ XÓA: import { getFunctions, httpsCallable } from 'firebase/functions';
 
 // =====================================================
-// Firebase Configuration
+// Firebase Configuration with Environment Variables
 // =====================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyBLeBmdJ85IhfeJ7sGBHOlSjUmYJ6V_YIY",
-  authDomain: "thpt-chi-linh.firebaseapp.com",
-  projectId: "thpt-chi-linh",
-  storageBucket: "thpt-chi-linh.firebasestorage.app",
-  messagingSenderId: "59436766218",
-  appId: "1:59436766218:web:8621e33cc12f6129e6fbf3",
-  measurementId: "G-442TZLSK9J"
+
+// Validate required environment variables
+const validateFirebaseConfig = () => {
+  const required = [
+    'REACT_APP_FIREBASE_API_KEY',
+    'REACT_APP_FIREBASE_AUTH_DOMAIN', 
+    'REACT_APP_FIREBASE_PROJECT_ID',
+    'REACT_APP_FIREBASE_STORAGE_BUCKET',
+    'REACT_APP_FIREBASE_MESSAGING_SENDER_ID',
+    'REACT_APP_FIREBASE_APP_ID'
+  ];
+  
+  const missing = required.filter(key => !process.env[key]);
+  
+  if (missing.length > 0) {
+    console.warn('Missing Firebase environment variables:', missing);
+    return false;
+  }
+  return true;
 };
+
+// Environment-based Firebase config with fallback
+const getFirebaseConfig = () => {
+  // Try to get from environment variables first
+  const envConfig = {
+    apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+    authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+    projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+    storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+    appId: process.env.REACT_APP_FIREBASE_APP_ID,
+    measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+  };
+
+  // Check if all required environment variables are present
+  const hasEnvConfig = validateFirebaseConfig();
+  
+  if (hasEnvConfig) {
+    console.log('✅ Using Firebase config from environment variables');
+    return envConfig;
+  } else {
+    // Fallback to hardcoded config for development
+    console.warn('⚠️ Using hardcoded Firebase config (development fallback). Please configure environment variables for production.');
+    return {
+      apiKey: "AIzaSyBLeBmdJ85IhfeJ7sGBHOlSjUmYJ6V_YIY",
+      authDomain: "thpt-chi-linh.firebaseapp.com",
+      projectId: "thpt-chi-linh",
+      storageBucket: "thpt-chi-linh.firebasestorage.app",
+      messagingSenderId: "59436766218",
+      appId: "1:59436766218:web:8621e33cc12f6129e6fbf3",
+      measurementId: "G-442TZLSK9J"
+    };
+  }
+};
+
+const firebaseConfig = getFirebaseConfig();
 
 // Khởi tạo Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-// ⚡️ ĐÃ XÓA: const functions = getFunctions(app);
 
-// ⚡️ MỚI: Thêm URL API Vercel của bạn - Sử dụng environment variable
+// =====================================================
+// FIREBASE OPTIMIZATION CONSTANTS
+// =====================================================
+
+// Cache configuration
+const CACHE_CONFIG = {
+  DEFAULT_TTL: 5 * 60 * 1000, // 5 minutes
+  USER_TTL: 30 * 60 * 1000,   // 30 minutes for user data
+  PUBLIC_DATA_TTL: 10 * 60 * 1000, // 10 minutes for public data
+  MAX_CACHE_SIZE: 50, // Maximum cache entries
+  OFFLINE_TIMEOUT: 30000, // 30 seconds for offline detection
+};
+
+// Session configuration
+const SESSION_CONFIG = {
+  TOKEN_REFRESH_INTERVAL: 45 * 60 * 1000, // 45 minutes
+  SESSION_TIMEOUT: 60 * 60 * 1000, // 1 hour
+  REMEMBER_ME_DURATION: 30 * 24 * 60 * 60 * 1000, // 30 days
+  MIN_ACTIVITY_INTERVAL: 30 * 1000, // 30 seconds
+};
+
+// Pagination defaults
+const PAGINATION_CONFIG = {
+  DEFAULT_PAGE_SIZE: 20,
+  MAX_PAGE_SIZE: 100,
+  ADMIN_PAGE_SIZE: 50,
+};
+
+// Debounce configuration
+const DEBOUNCE_CONFIG = {
+  SEARCH_DELAY: 300,
+  UPDATE_DELAY: 500,
+  RESIZE_DELAY: 250,
+};
+
+// Performance monitoring
+let firebaseCallCount = 0;
+let cacheHitCount = 0;
+
+// ⚡️ MỚI: Thêm URL API Vercel của bạn - Sử dụng environment variable với fallback
 const VERCEL_API_URL = process.env.REACT_APP_API_URL || 
   (process.env.NODE_ENV === 'production' 
     ? window.location.origin 
-    : 'http://localhost:3000'); 
+    : 'http://localhost:3000');
+
+console.log('🔗 Using API URL:', VERCEL_API_URL); 
 
 // =====================================================
 // Utility Functions
@@ -72,6 +188,560 @@ const formatCurrency = (amount) => {
   if (typeof amount !== 'number') return "0 đ";
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
+
+// =====================================================
+// FIREBASE OPTIMIZATION UTILITIES
+// =====================================================
+
+// Cache utilities
+class FirebaseCache {
+  constructor() {
+    this.cache = new Map();
+    this.timestamps = new Map();
+  }
+
+  set(key, value, ttl = CACHE_CONFIG.DEFAULT_TTL) {
+    // Check cache size limit
+    if (this.cache.size >= CACHE_CONFIG.MAX_CACHE_SIZE) {
+      // Remove oldest entry
+      const oldestKey = this.timestamps.keys().next().value;
+      this.delete(oldestKey);
+    }
+
+    this.cache.set(key, value);
+    this.timestamps.set(key, Date.now() + ttl);
+  }
+
+  get(key) {
+    const timestamp = this.timestamps.get(key);
+    if (!timestamp) {
+      this.delete(key);
+      return null;
+    }
+
+    if (Date.now() > timestamp) {
+      this.delete(key);
+      return null;
+    }
+
+    return this.cache.get(key);
+  }
+
+  delete(key) {
+    this.cache.delete(key);
+    this.timestamps.delete(key);
+  }
+
+  clear() {
+    this.cache.clear();
+    this.timestamps.clear();
+  }
+
+  generateKey(collection, params = {}) {
+    return `${collection}_${JSON.stringify(params)}`;
+  }
+}
+
+// Global cache instances
+const firebaseCache = new FirebaseCache();
+
+// Debounce utility
+const debounce = (func, delay) => {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(null, args), delay);
+  };
+};
+
+// Throttle utility
+const throttle = (func, delay) => {
+  let lastCall = 0;
+  return (...args) => {
+    const now = Date.now();
+    if (now - lastCall >= delay) {
+      lastCall = now;
+      func.apply(null, args);
+    }
+  };
+};
+
+// Network status tracking
+const isOnline = () => navigator.onLine;
+let isFirebaseOnline = true;
+
+// Offline queue for batch operations
+const offlineQueue = [];
+let isProcessingQueue = false;
+
+// Firebase call tracking
+const trackFirebaseCall = (operation) => {
+  firebaseCallCount++;
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🔥 Firebase call #${firebaseCallCount}: ${operation}`);
+  }
+};
+
+// Cache hit tracking
+const trackCacheHit = () => {
+  cacheHitCount++;
+};
+
+// Performance monitoring
+const getPerformanceStats = () => {
+  return {
+    totalCalls: firebaseCallCount,
+    cacheHits: cacheHitCount,
+    cacheHitRate: firebaseCallCount > 0 ? (cacheHitCount / firebaseCallCount * 100).toFixed(2) + '%' : '0%',
+    cacheSize: firebaseCache.cache.size,
+    isOnline: isOnline(),
+    isFirebaseOnline,
+    offlineQueueLength: offlineQueue.length
+  };
+};
+
+// =====================================================
+// OFFLINE SUPPORT UTILITIES
+// =====================================================
+
+// Enable/disable Firebase network
+const enableFirebaseNetwork = async () => {
+  try {
+    await enableNetwork(db);
+    isFirebaseOnline = true;
+    console.log('📡 Firebase network enabled');
+  } catch (error) {
+    console.error('Failed to enable Firebase network:', error);
+  }
+};
+
+const disableFirebaseNetwork = async () => {
+  try {
+    await disableNetwork(db);
+    isFirebaseOnline = false;
+    console.log('📴 Firebase network disabled');
+  } catch (error) {
+    console.error('Failed to disable Firebase network:', error);
+  }
+};
+
+// Queue operations for offline processing
+const queueOfflineOperation = (operation) => {
+  offlineQueue.push({
+    ...operation,
+    timestamp: Date.now()
+  });
+  
+  if (!isProcessingQueue) {
+    processOfflineQueue();
+  }
+};
+
+// Process queued operations when back online
+const processOfflineQueue = async () => {
+  if (isProcessingQueue || offlineQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  while (offlineQueue.length > 0 && isOnline()) {
+    const operation = offlineQueue.shift();
+    
+    try {
+      switch (operation.type) {
+        case 'create':
+          await addDoc(collection(db, operation.collection), operation.data);
+          break;
+        case 'update':
+          await updateDoc(doc(db, operation.collection, operation.id), operation.data);
+          break;
+        case 'delete':
+          await deleteDoc(doc(db, operation.collection, operation.id));
+          break;
+      }
+      console.log(`✅ Processed offline operation: ${operation.type}`);
+    } catch (error) {
+      console.error('Failed to process offline operation:', error);
+      // Re-queue failed operations
+      offlineQueue.unshift(operation);
+      break;
+    }
+  }
+  
+  isProcessingQueue = false;
+};
+
+// Listen for online/offline events
+window.addEventListener('online', async () => {
+  console.log('🌐 Back online - processing offline queue');
+  await enableFirebaseNetwork();
+  await processOfflineQueue();
+});
+
+window.addEventListener('offline', async () => {
+  console.log('📴 Gone offline - queuing operations');
+  await disableFirebaseNetwork();
+});
+
+// =====================================================
+// OPTIMIZED FIREBASE OPERATIONS
+// =====================================================
+
+// Optimized document fetch with caching
+const getCachedDocument = async (collection, id, cacheTTL = CACHE_CONFIG.DEFAULT_TTL, bypassCache = false) => {
+  const cacheKey = firebaseCache.generateKey(collection, { id });
+  
+  // Check cache first
+  if (!bypassCache) {
+    const cached = firebaseCache.get(cacheKey);
+    if (cached) {
+      trackCacheHit();
+      return cached;
+    }
+  }
+
+  try {
+    trackFirebaseCall(`getDoc:${collection}:${id}`);
+    const docRef = doc(db, collection, id);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = { id: docSnap.id, ...docSnap.data() };
+      firebaseCache.set(cacheKey, data, cacheTTL);
+      return data;
+    }
+    return null;
+  } catch (error) {
+    console.error(`Error fetching ${collection}/${id}:`, error);
+    throw error;
+  }
+};
+
+// Optimized collection query with pagination
+const getCachedCollection = async (collection, options = {}) => {
+  const {
+    page = 1,
+    limit = PAGINATION_CONFIG.DEFAULT_PAGE_SIZE,
+    orderBy = 'name',
+    direction = 'asc',
+    filters = {},
+    search = '',
+    cacheTTL = CACHE_CONFIG.PUBLIC_DATA_TTL,
+    bypassCache = false
+  } = options;
+
+  const cacheKey = firebaseCache.generateKey(collection, options);
+  
+  // Check cache for simple queries (no pagination, no complex filters)
+  const isCacheable = page === 1 && limit === PAGINATION_CONFIG.DEFAULT_PAGE_SIZE && 
+                     Object.keys(filters).length === 0 && !search;
+  
+  if (isCacheable && !bypassCache) {
+    const cached = firebaseCache.get(cacheKey);
+    if (cached) {
+      trackCacheHit();
+      return cached;
+    }
+  }
+
+  try {
+    trackFirebaseCall(`query:${collection}:${JSON.stringify(options)}`);
+    
+    let q = collection(db, collection);
+    
+    // Apply filters
+    Object.entries(filters).forEach(([field, value]) => {
+      q = query(q, where(field, '==', value));
+    });
+    
+    // Apply search
+    if (search) {
+      q = query(q, where('name', '>=', search), where('name', '<=', search + '\uf8ff'));
+    }
+    
+    // Apply ordering and pagination
+    q = query(q, orderBy(orderBy, direction));
+    
+    if (limit > 0) {
+      q = query(q, limit(limit));
+    }
+    
+    const querySnapshot = await getDocs(q);
+    const items = querySnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data() 
+    }));
+    
+    // Get total count for pagination info
+    let totalCount = items.length;
+    if (page === 1 && !search && Object.keys(filters).length === 0) {
+      // For simple queries, we can get a more accurate count
+      const countSnapshot = await getDocs(collection(db, collection));
+      totalCount = countSnapshot.size;
+    }
+    
+    const result = {
+      items,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNext: page * limit < totalCount,
+        hasPrev: page > 1
+      }
+    };
+    
+    // Cache the result for simple queries
+    if (isCacheable && !bypassCache) {
+      firebaseCache.set(cacheKey, result, cacheTTL);
+    }
+    
+    return result;
+  } catch (error) {
+    console.error(`Error fetching ${collection}:`, error);
+    throw error;
+  }
+};
+
+// Batch operations
+const executeBatchOperation = async (operations = []) => {
+  if (operations.length === 0) return { success: true, writtenCount: 0 };
+  
+  // Queue offline if not online
+  if (!isOnline() || !isFirebaseOnline) {
+    operations.forEach(op => queueOfflineOperation(op));
+    return { success: true, writtenCount: operations.length, offline: true };
+  }
+  
+  try {
+    trackFirebaseCall(`batch:${operations.length} operations`);
+    const batch = writeBatch(db);
+    let writtenCount = 0;
+    
+    operations.forEach(op => {
+      const { type, collection, id, data } = op;
+      const docRef = id ? doc(db, collection, id) : doc(db, collection);
+      
+      switch (type) {
+        case 'create':
+          batch.set(docRef, data);
+          break;
+        case 'update':
+          batch.update(docRef, data);
+          break;
+        case 'delete':
+          batch.delete(docRef);
+          break;
+      }
+      writtenCount++;
+    });
+    
+    await batch.commit();
+    
+    // Clear related cache entries
+    operations.forEach(op => {
+      if (op.collection) {
+        const cacheKey = firebaseCache.generateKey(op.collection);
+        firebaseCache.delete(cacheKey);
+      }
+    });
+    
+    return { success: true, writtenCount };
+  } catch (error) {
+    console.error('Batch operation failed:', error);
+    throw error;
+  }
+};
+
+// =====================================================
+// ENHANCED AUTHENTICATION UTILITIES
+// =====================================================
+
+// Session management
+class SessionManager {
+  constructor() {
+    this.sessionData = this.loadSessionData();
+    this.activityTimer = null;
+    this.refreshTimer = null;
+    this.isActive = false;
+  }
+
+  loadSessionData() {
+    try {
+      const rememberMe = localStorage.getItem('rememberMe') === 'true';
+      const token = rememberMe ? localStorage.getItem('authToken') : sessionStorage.getItem('authToken');
+      const expiresAt = rememberMe ? 
+        localStorage.getItem('tokenExpiresAt') : 
+        sessionStorage.getItem('tokenExpiresAt');
+      
+      return {
+        token,
+        expiresAt: expiresAt ? parseInt(expiresAt) : null,
+        rememberMe,
+        lastActivity: Date.now()
+      };
+    } catch (error) {
+      console.error('Error loading session data:', error);
+      return {};
+    }
+  }
+
+  saveSessionData(token, expiresIn, rememberMe = false) {
+    const expiresAt = Date.now() + (expiresIn * 1000);
+    
+    const storage = rememberMe ? localStorage : sessionStorage;
+    const nonPersistentStorage = rememberMe ? sessionStorage : localStorage;
+    
+    try {
+      storage.setItem('authToken', token);
+      storage.setItem('tokenExpiresAt', expiresAt.toString());
+      storage.setItem('rememberMe', rememberMe.toString());
+      
+      // Clean non-persistent storage
+      nonPersistentStorage.removeItem('authToken');
+      nonPersistentStorage.removeItem('tokenExpiresAt');
+      
+      this.sessionData = {
+        token,
+        expiresAt,
+        rememberMe,
+        lastActivity: Date.now()
+      };
+      
+      return true;
+    } catch (error) {
+      console.error('Error saving session data:', error);
+      return false;
+    }
+  }
+
+  clearSession() {
+    try {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('tokenExpiresAt');
+      localStorage.removeItem('rememberMe');
+      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('tokenExpiresAt');
+      sessionStorage.removeItem('tokenExpiresAt');
+      
+      this.sessionData = {};
+      this.stopTimers();
+      
+      return true;
+    } catch (error) {
+      console.error('Error clearing session:', error);
+      return false;
+    }
+  }
+
+  isTokenValid() {
+    if (!this.sessionData.token || !this.sessionData.expiresAt) {
+      return false;
+    }
+    return Date.now() < this.sessionData.expiresAt;
+  }
+
+  shouldRefreshToken() {
+    if (!this.isTokenValid()) return false;
+    
+    const timeUntilExpiry = this.sessionData.expiresAt - Date.now();
+    const refreshThreshold = 5 * 60 * 1000; // 5 minutes before expiry
+    
+    return timeUntilExpiry <= refreshThreshold;
+  }
+
+  updateActivity() {
+    this.sessionData.lastActivity = Date.now();
+    
+    // Only reset timers if session is active
+    if (this.isActive) {
+      this.startActivityTimer();
+    }
+  }
+
+  startActivityTimer() {
+    this.stopActivityTimer();
+    
+    this.activityTimer = setInterval(() => {
+      const inactiveTime = Date.now() - this.sessionData.lastActivity;
+      
+      // Auto logout after inactivity
+      if (inactiveTime > SESSION_CONFIG.SESSION_TIMEOUT) {
+        console.log('🔒 Auto logout due to inactivity');
+        this.clearSession();
+        window.location.reload();
+      }
+    }, SESSION_CONFIG.MIN_ACTIVITY_INTERVAL);
+  }
+
+  stopActivityTimer() {
+    if (this.activityTimer) {
+      clearInterval(this.activityTimer);
+      this.activityTimer = null;
+    }
+  }
+
+  startRefreshTimer() {
+    this.stopRefreshTimer();
+    
+    this.refreshTimer = setInterval(async () => {
+      if (this.shouldRefreshToken()) {
+        console.log('🔄 Auto refreshing token...');
+        try {
+          const user = auth.currentUser;
+          if (user) {
+            await user.getIdToken(true);
+            console.log('✅ Token refreshed automatically');
+          }
+        } catch (error) {
+          console.error('❌ Token refresh failed:', error);
+        }
+      }
+    }, SESSION_CONFIG.TOKEN_REFRESH_INTERVAL);
+  }
+
+  stopRefreshTimer() {
+    if (this.refreshTimer) {
+      clearInterval(this.refreshTimer);
+      this.refreshTimer = null;
+    }
+  }
+
+  start(rememberMe = false) {
+    this.isActive = true;
+    this.startActivityTimer();
+    this.startRefreshTimer();
+    
+    // Set up activity listeners
+    const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+    this.activityListener = () => this.updateActivity();
+    
+    activityEvents.forEach(event => {
+      document.addEventListener(event, this.activityListener, true);
+    });
+  }
+
+  stop() {
+    this.isActive = false;
+    this.stopTimers();
+    
+    if (this.activityListener) {
+      const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'];
+      activityEvents.forEach(event => {
+        document.removeEventListener(event, this.activityListener, true);
+      });
+      this.activityListener = null;
+    }
+  }
+
+  stopTimers() {
+    this.stopActivityTimer();
+    this.stopRefreshTimer();
+  }
+}
+
+// Global session manager instance
+const sessionManager = new SessionManager();
 
 // ⚡️ MỚI: Tách hàm tính tổng ra ngoài để dùng chung
 const calculateCartTotal = (cart, subjects, courses) => {
@@ -130,7 +800,7 @@ const AppContext = createContext(null);
 const DataContext = createContext(null);
 
 // =====================================================
-// HOOK: useAuth (Quản lý Xác thực & Trạng thái)
+// HOOK: useAuth (Quản lý Xác thực & Trạng thái) - OPTIMIZED
 // =====================================================
 const useAuth = () => {
   const [authState, setAuthState] = useState({
@@ -142,71 +812,152 @@ const useAuth = () => {
     needsOnboarding: false, // Cần điền thông tin
     kicked: false, // Bị đá do đăng nhập nơi khác
     sessionConflict: null, // Phát hiện xung đột phiên
+    rememberMe: false, // Remember me preference
+    lastActivity: null, // Last user activity
+    performanceStats: null, // Performance monitoring
   });
 
-  const [localToken, setLocalToken] = useState(() => localStorage.getItem('sessionToken'));
+  const [localToken, setLocalToken] = useState(() => sessionManager.sessionData.token);
+  const userDocUnsubscribe = useRef(null);
+  const authStateUnsubscribe = useRef(null);
 
-  const handleSignOut = async () => {
-    localStorage.removeItem('sessionToken');
-    setLocalToken(null);
-    await signOut(auth);
-  };
+  // Debounced performance stats update
+  const updatePerformanceStats = useCallback(
+    debounce(() => {
+      setAuthState(prev => ({
+        ...prev,
+        performanceStats: getPerformanceStats()
+      }));
+    }, 2000), // Update every 2 seconds max
+    []
+  );
 
-  // 1. Lắng nghe thay đổi trạng thái Auth (Đăng nhập/Đăng xuất)
+  const handleSignOut = useCallback(async () => {
+    try {
+      // Clean up session
+      sessionManager.stop();
+      sessionManager.clearSession();
+      
+      // Clean up listeners
+      if (authStateUnsubscribe.current) {
+        authStateUnsubscribe.current();
+        authStateUnsubscribe.current = null;
+      }
+      
+      if (userDocUnsubscribe.current) {
+        userDocUnsubscribe.current();
+        userDocUnsubscribe.current = null;
+      }
+      
+      // Clear caches
+      firebaseCache.clear();
+      
+      // Sign out from Firebase
+      await signOut(auth);
+      
+      // Reset state
+      setLocalToken(null);
+      setAuthState({
+        authUser: null,
+        currentUser: null,
+        role: 'student',
+        isAuthReady: true,
+        isLoading: false,
+        needsOnboarding: false,
+        kicked: false,
+        sessionConflict: null,
+        rememberMe: false,
+        lastActivity: null,
+        performanceStats: getPerformanceStats(),
+      });
+      
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  }, []);
+
+  // 1. Lắng nghe thay đổi trạng thái Auth (Đăng nhập/Đăng xuất) - OPTIMIZED
   useEffect(() => {
+    // Clean up existing listener
+    if (authStateUnsubscribe.current) {
+      authStateUnsubscribe.current();
+      authStateUnsubscribe.current = null;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        // Người dùng đã đăng nhập
-        const tokenResult = await user.getIdTokenResult(true); // Force refresh
-        const role = tokenResult.claims.role || 'student';
-        
-        // Kiểm tra session conflict
-        const userDocRef = doc(db, 'users', user.uid);
-        const userDoc = await getDoc(userDocRef);
-
-        if (userDoc.exists()) {
-          const dbToken = userDoc.data().activeLoginToken;
-          const currentLocalToken = localStorage.getItem('sessionToken');
-
-          if (dbToken && dbToken !== currentLocalToken) {
-            // Phát hiện xung đột!
-            setAuthState(prev => ({
-              ...prev,
-              isAuthReady: true,
-              isLoading: false,
-              sessionConflict: { authUser: user, role: role }
-            }));
-            return; // Dừng lại, chờ người dùng xác nhận
+      try {
+        if (user) {
+          // Người dùng đã đăng nhập
+          console.log('👤 User authenticated:', user.uid);
+          
+          // Get fresh token with caching
+          const tokenResult = await user.getIdTokenResult(true);
+          const role = tokenResult.claims.role || 'student';
+          
+          // Get cached user data first for faster login
+          let currentUser = null;
+          try {
+            currentUser = await getCachedDocument('users', user.uid, CACHE_CONFIG.USER_TTL);
+          } catch (error) {
+            console.warn('Failed to get cached user data:', error);
           }
-        }
-        
-        // Không có xung đột, tiếp tục đăng nhập
-        proceedToLogin(user, role);
+          
+          // Check session conflict (optimized)
+          if (currentUser?.activeLoginToken) {
+            const currentLocalToken = sessionManager.sessionData.token;
+            
+            if (currentUser.activeLoginToken !== currentLocalToken) {
+              console.log('⚠️ Session conflict detected');
+              setAuthState(prev => ({
+                ...prev,
+                isAuthReady: true,
+                isLoading: false,
+                sessionConflict: { authUser: user, role: role }
+              }));
+              return;
+            }
+          }
+          
+          // Check remember me preference
+          const rememberMe = localStorage.getItem('rememberMe') === 'true';
+          
+          // Setup session
+          if (rememberMe) {
+            sessionManager.start(true);
+          } else {
+            sessionManager.start(false);
+          }
+          
+          // Continue with login
+          proceedToLogin(user, role, rememberMe);
 
-      } else {
-        // Người dùng đã đăng xuất
-        setAuthState({
-          authUser: null,
-          currentUser: null,
-          role: 'student',
-          isAuthReady: true,
-          isLoading: false,
-          needsOnboarding: false,
-          kicked: false,
-          sessionConflict: null,
-        });
-        localStorage.removeItem('sessionToken');
-        setLocalToken(null);
+        } else {
+          // Người dùng đã đăng xuất
+          console.log('👋 User signed out');
+          
+          sessionManager.stop();
+          handleSignOut();
+        }
+      } catch (error) {
+        console.error('Auth state change error:', error);
       }
     });
 
-    return () => unsubscribe();
-  }, []);
+    authStateUnsubscribe.current = unsubscribe;
+    
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
+  }, [handleSignOut]);
 
-  // 2. Hàm tiếp tục đăng nhập (sau khi check conflict)
-  const proceedToLogin = async (user, role) => {
+  // 2. Hàm tiếp tục đăng nhập (sau khi check conflict) - OPTIMIZED
+  const proceedToLogin = useCallback(async (user, role, rememberMe = false) => {
     const newSessionToken = generateSessionToken();
-    localStorage.setItem('sessionToken', newSessionToken);
+    
+    // Save session data with proper storage
+    sessionManager.saveSessionData(newSessionToken, 3600, rememberMe); // 1 hour default
     setLocalToken(newSessionToken);
 
     setAuthState(prev => ({
@@ -216,68 +967,138 @@ const useAuth = () => {
       isAuthReady: true,
       isLoading: true, // Bắt đầu tải data Firestore
       sessionConflict: null,
+      rememberMe,
+      lastActivity: Date.now(),
     }));
 
-    // Cập nhật token mới lên DB
-    const userDocRef = doc(db, 'users', user.uid);
-    try {
-      await updateDoc(userDocRef, { activeLoginToken: newSessionToken }); // Dòng mới
-    } catch (error) {
-      if (error.code !== 'not-found') {
-        console.error("Lỗi cập nhật session token (cho user cũ):", error);
-      }
-    }
-  };
+    // Update performance stats
+    updatePerformanceStats();
 
-  // 3. Lắng nghe thay đổi tài liệu người dùng (Firestore)
+    // Update session token in DB (non-blocking)
+    try {
+      const operations = [{
+        type: 'update',
+        collection: 'users',
+        id: user.uid,
+        data: { 
+          activeLoginToken: newSessionToken,
+          lastLoginAt: serverTimestamp(),
+          loginCount: (user.reloadUserInfo?.loginCount || 0) + 1
+        }
+      }];
+      
+      executeBatchOperation(operations);
+    } catch (error) {
+      console.warn("Lỗi cập nhật session token:", error);
+      // Don't fail login for this error
+    }
+  }, [updatePerformanceStats]);
+
+  // 3. Lắng nghe thay đổi tài liệu người dùng (Firestore) - OPTIMIZED
   useEffect(() => {
-    let unsubscribeUserDoc;
+    // Clean up existing listener
+    if (userDocUnsubscribe.current) {
+      userDocUnsubscribe.current();
+      userDocUnsubscribe.current = null;
+    }
 
     if (authState.isAuthReady && authState.authUser) {
       const userDocRef = doc(db, 'users', authState.authUser.uid);
       
-      unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const userData = docSnap.data();
-          
-          // Kiểm tra bị đá (session management)
-          const dbToken = userData.activeLoginToken;
-          if (localToken && dbToken && dbToken !== localToken) {
-            handleSignOut(); // Đăng xuất thiết bị này
-            setAuthState(prev => ({ ...prev, kicked: true }));
-            return;
-          }
+      const unsubscribeUserDoc = onSnapshot(userDocRef, 
+        // Success callback with optimization
+        (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = { uid: docSnap.id, ...docSnap.data() };
+            
+            // Cache user data
+            const cacheKey = firebaseCache.generateKey('users', { uid: authState.authUser.uid });
+            firebaseCache.set(cacheKey, userData, CACHE_CONFIG.USER_TTL);
+            
+            // Kiểm tra bị đá (session management)
+            const dbToken = userData.activeLoginToken;
+            if (localToken && dbToken && dbToken !== localToken) {
+              console.log('👢 User kicked from other device');
+              handleSignOut();
+              setAuthState(prev => ({ ...prev, kicked: true }));
+              return;
+            }
 
-          setAuthState(prev => ({
-            ...prev,
-            currentUser: userData,
-            isLoading: false,
-            needsOnboarding: false, // User đã tồn tại, không cần onboarding
-          }));
-        } else {
-          // Người dùng mới, cần onboarding
-          setAuthState(prev => ({
-            ...prev,
-            currentUser: null,
-            isLoading: false,
-            needsOnboarding: true,
-          }));
+            // Check if user needs onboarding
+            const needsOnboarding = !userData.hoTen || !userData.lop;
+            
+            setAuthState(prev => ({
+              ...prev,
+              currentUser: userData,
+              isLoading: false,
+              needsOnboarding,
+              lastActivity: Date.now(),
+            }));
+            
+            updatePerformanceStats();
+          } else {
+            // Người dùng mới, cần onboarding
+            setAuthState(prev => ({
+              ...prev,
+              currentUser: null,
+              isLoading: false,
+              needsOnboarding: true,
+              lastActivity: Date.now(),
+            }));
+          }
+        },
+        // Error callback
+        (error) => {
+          console.error("Lỗi lắng nghe user document:", error);
+          
+          // Try to get cached data on error
+          if (authState.authUser) {
+            getCachedDocument('users', authState.authUser.uid)
+              .then(userData => {
+                if (userData) {
+                  setAuthState(prev => ({
+                    ...prev,
+                    currentUser: userData,
+                    isLoading: false,
+                    needsOnboarding: !userData.hoTen || !userData.lop,
+                  }));
+                } else {
+                  setAuthState(prev => ({
+                    ...prev,
+                    isLoading: false,
+                    needsOnboarding: true,
+                  }));
+                }
+              })
+              .catch(() => {
+                setAuthState(prev => ({ 
+                  ...prev, 
+                  isLoading: false,
+                  needsOnboarding: true 
+                }));
+              });
+          }
         }
-      }, (error) => {
-        console.error("Lỗi lắng nghe user document:", error);
-        setAuthState(prev => ({ ...prev, isLoading: false }));
-      });
+      );
+      
+      userDocUnsubscribe.current = unsubscribeUserDoc;
+      
     } else if (authState.isAuthReady && !authState.authUser) {
       // Đã sẵn sàng nhưng chưa đăng nhập
-      setAuthState(prev => ({ ...prev, isLoading: false }));
+      setAuthState(prev => ({ 
+        ...prev, 
+        isLoading: false,
+        lastActivity: Date.now(),
+      }));
     }
 
     return () => {
-      if (unsubscribeUserDoc) {
-        unsubscribeUserDoc();
+      if (userDocUnsubscribe.current) {
+        userDocUnsubscribe.current();
+        userDocUnsubscribe.current = null;
       }
     };
-  }, [authState.isAuthReady, authState.authUser, localToken]);
+  }, [authState.isAuthReady, authState.authUser, localToken, handleSignOut, updatePerformanceStats]);
   
   // Hàm cập nhật needsOnboarding (cho OnboardingForm)
   const setOnboardingCompleted = () => {
@@ -293,9 +1114,10 @@ const useAuth = () => {
 };
 
 // =====================================================
-// HOOK: usePublicData (Tải dữ liệu chung)
 // =====================================================
-const usePublicData = () => {
+// HOOK: usePublicData (Tải dữ liệu chung) - OPTIMIZED
+// =====================================================
+const usePublicData = (options = {}) => {
   const { isAuthReady, authUser } = useContext(AppContext);
   const [data, setData] = useState({
     subjects: [],
@@ -303,136 +1125,506 @@ const usePublicData = () => {
     quizzes: [],
     loading: true,
     error: null,
+    pagination: {
+      subjects: { page: 1, hasNext: false, totalPages: 1 },
+      courses: { page: 1, hasNext: false, totalPages: 1 },
+      quizzes: { page: 1, hasNext: false, totalPages: 1 },
+    },
+    lastUpdated: null,
   });
 
-  useEffect(() => {
-    if (!isAuthReady) return; // Chỉ chạy khi Auth đã sẵn sàng
+  const { 
+    enableRealTime = true,
+    useCache = true,
+    batchSize = PAGINATION_CONFIG.DEFAULT_PAGE_SIZE,
+    filters = {}
+  } = options;
 
-    if (!authUser) {
-        setData(prev => ({ ...prev, loading: false }));
-        return;
+  const unsubscribes = useRef([]);
+
+  // Debounced data update to prevent excessive re-renders
+  const updateData = useCallback(
+    debounce((updates) => {
+      setData(prev => ({
+        ...prev,
+        ...updates,
+        lastUpdated: Date.now(),
+      }));
+    }, 100), // Batch updates every 100ms
+    []
+  );
+
+  // Optimized collection listener with conditional updates
+  const createOptimizedListener = useCallback((collectionName, filterOptions = {}) => {
+    if (!enableRealTime) return null;
+
+    // Use simple queries for better performance
+    let q = collection(db, collectionName);
+    
+    // Apply filters if provided
+    Object.entries(filterOptions).forEach(([field, value]) => {
+      q = query(q, where(field, '==', value));
+    });
+    
+    // Add ordering for consistent results
+    const orderField = collectionName === 'subjects' || collectionName === 'courses' ? 'name' : 'title';
+    q = query(q, orderBy(orderField, 'asc'));
+    
+    // Limit initial load for better performance
+    if (enableRealTime) {
+      q = query(q, limit(batchSize * 2)); // Load a bit more for smooth scrolling
     }
 
-    const fetchCollection = (collectionName, setError) => {
-      const q = query(collection(db, collectionName));
-      
-      return onSnapshot(q, (querySnapshot) => {
-        const items = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setData(prev => ({
-          ...prev,
-          [collectionName]: items,
+    return onSnapshot(
+      q,
+      (querySnapshot) => {
+        const items = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
         }));
-      }, (err) => {
-        console.error(`Error fetching ${collectionName}:`, err);
-        setError(`Lỗi tải ${collectionName}: ${err.message}`);
+
+        // Cache the data
+        if (useCache) {
+          const cacheKey = firebaseCache.generateKey(collectionName, filterOptions);
+          firebaseCache.set(cacheKey, items, CACHE_CONFIG.PUBLIC_DATA_TTL);
+        }
+
+        updateData({
+          [collectionName]: items,
+          error: null,
+          loading: false,
+        });
+
+      },
+      (error) => {
+        console.error(`Error fetching ${collectionName}:`, error);
+        
+        // Try to get cached data on error
+        if (useCache) {
+          const cacheKey = firebaseCache.generateKey(collectionName, filterOptions);
+          const cached = firebaseCache.get(cacheKey);
+          
+          if (cached) {
+            updateData({
+              [collectionName]: cached,
+              error: null,
+              loading: false,
+            });
+            return;
+          }
+        }
+        
+        updateData({
+          error: `Lỗi tải ${collectionName}: ${error.message}`,
+          loading: false,
+        });
+      }
+    );
+  }, [enableRealTime, useCache, batchSize, updateData]);
+
+  // Load data with optimized fetching
+  const loadData = useCallback(async () => {
+    if (!isAuthReady || !authUser) {
+      updateData({ loading: false });
+      return;
+    }
+
+    try {
+      updateData({ loading: true, error: null });
+
+      // Try to get cached data first for immediate display
+      const cachePromises = ['subjects', 'courses', 'quizzes'].map(async (collection) => {
+        if (useCache) {
+          const cacheKey = firebaseCache.generateKey(collection, filters);
+          const cached = firebaseCache.get(cacheKey);
+          if (cached) {
+            return { [collection]: cached };
+          }
+        }
+        return null;
       });
-    };
 
-    const errors = [];
-    // Ghi chú: Firestore Rules phải cho phép user đã auth đọc các collection này
-    const unsubSubjects = fetchCollection('subjects', (e) => errors.push(e));
-    const unsubCourses = fetchCollection('courses', (e) => errors.push(e));
-    const unsubQuizzes = fetchCollection('quizzes', (e) => errors.push(e));
+      const cachedResults = await Promise.allSettled(cachePromises);
+      const immediateData = {};
+      
+      cachedResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          const collection = ['subjects', 'courses', 'quizzes'][index];
+          immediateData[collection] = result.value[collection];
+        }
+      });
 
-    setData(prev => ({
-      ...prev,
-      loading: false,
-      error: errors.length > 0 ? errors.join(', ') : null,
-    }));
+      if (Object.keys(immediateData).length > 0) {
+        updateData({
+          ...immediateData,
+          loading: false,
+        });
+      }
 
+      // Set up real-time listeners
+      if (enableRealTime) {
+        // Clean up existing listeners
+        unsubscribes.current.forEach(unsub => unsub && unsub());
+        unsubscribes.current = [];
+
+        // Create new listeners
+        ['subjects', 'courses', 'quizzes'].forEach(collection => {
+          const unsub = createOptimizedListener(collection, filters);
+          if (unsub) {
+            unsubscribes.current.push(unsub);
+          }
+        });
+      }
+
+      updateData({ loading: false });
+
+    } catch (error) {
+      console.error('Error loading public data:', error);
+      updateData({
+        error: 'Lỗi khi tải dữ liệu: ' + error.message,
+        loading: false,
+      });
+    }
+  }, [isAuthReady, authUser, enableRealTime, useCache, filters, createOptimizedListener, updateData]);
+
+  // Pagination function
+  const loadPage = useCallback(async (collection, page = 1, limit = PAGINATION_CONFIG.DEFAULT_PAGE_SIZE) => {
+    try {
+      trackFirebaseCall(`paginate:${collection}:${page}:${limit}`);
+      
+      const result = await getCachedCollection(collection, {
+        page,
+        limit,
+        orderBy: collection === 'quizzes' ? 'title' : 'name',
+        filters,
+        bypassCache: !useCache,
+        cacheTTL: CACHE_CONFIG.PUBLIC_DATA_TTL
+      });
+
+      setData(prev => ({
+        ...prev,
+        [collection]: result.items,
+        pagination: {
+          ...prev.pagination,
+          [collection]: result.pagination,
+        },
+        lastUpdated: Date.now(),
+      }));
+
+      return result;
+    } catch (error) {
+      console.error(`Error loading page ${page} of ${collection}:`, error);
+      setData(prev => ({
+        ...prev,
+        error: `Lỗi tải trang ${page} của ${collection}: ${error.message}`,
+      }));
+      return null;
+    }
+  }, [filters, useCache]);
+
+  // Initial load effect
+  useEffect(() => {
+    loadData();
+    
     return () => {
-      unsubSubjects();
-      unsubCourses();
-      unsubQuizzes();
+      // Clean up listeners
+      unsubscribes.current.forEach(unsub => unsub && unsub());
+      unsubscribes.current = [];
     };
-  }, [isAuthReady, authUser]);
+  }, [loadData]);
 
-  return data;
+  // Expose pagination methods
+  const paginationMethods = useMemo(() => ({
+    loadSubjectsPage: (page = 1) => loadPage('subjects', page),
+    loadCoursesPage: (page = 1) => loadPage('courses', page),
+    loadQuizzesPage: (page = 1) => loadPage('quizzes', page),
+  }), [loadPage]);
+
+  return {
+    ...data,
+    ...paginationMethods,
+    refresh: loadData,
+  };
 };
 
 // =====================================================
-// HOOK: useAdminData (Tải dữ liệu cho Admin)
 // =====================================================
-const useAdminData = (role) => {
+// HOOK: useAdminData (Tải dữ liệu cho Admin) - OPTIMIZED
+// =====================================================
+const useAdminData = (role, options = {}) => {
   const [adminData, setAdminData] = useState({
     users: [],
     transactions: [],
     orders: [],
     loading: true,
     error: null,
+    pagination: {
+      users: { page: 1, hasNext: false, totalPages: 1 },
+      transactions: { page: 1, hasNext: false, totalPages: 1 },
+      orders: { page: 1, hasNext: false, totalPages: 1 },
+    },
+    lastUpdated: null,
+    stats: null,
   });
 
-  useEffect(() => {
+  const {
+    enableRealTime = true,
+    useCache = true,
+    pageSize = PAGINATION_CONFIG.ADMIN_PAGE_SIZE,
+    enableStats = true,
+  } = options;
+
+  const unsubscribes = useRef([]);
+
+  // Debounced admin data update
+  const updateAdminData = useCallback(
+    debounce((updates) => {
+      setAdminData(prev => ({
+        ...prev,
+        ...updates,
+        lastUpdated: Date.now(),
+      }));
+    }, 150), // Slightly longer delay for admin data
+    []
+  );
+
+  // Create optimized admin listener
+  const createAdminListener = useCallback((collectionName, filterOptions = {}) => {
+    if (!enableRealTime || role !== 'admin') return null;
+
+    let q = collection(db, collectionName);
+    
+    // Apply filters for admin data
+    Object.entries(filterOptions).forEach(([field, value]) => {
+      q = query(q, where(field, '==', value));
+    });
+    
+    // Order by creation date for admin views (most recent first)
+    q = query(q, orderBy('createdAt', 'desc'));
+    
+    // Limit for better performance
+    q = query(q, limit(pageSize));
+
+    return onSnapshot(
+      q,
+      (querySnapshot) => {
+        const items = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Cache admin data with longer TTL
+        if (useCache) {
+          const cacheKey = firebaseCache.generateKey(`admin_${collectionName}`, filterOptions);
+          firebaseCache.set(cacheKey, items, CACHE_CONFIG.ADMIN_DATA_TTL || CACHE_CONFIG.PUBLIC_DATA_TTL);
+        }
+
+        updateAdminData({
+          [collectionName]: items,
+          error: null,
+        });
+
+      },
+      (error) => {
+        console.error(`Error fetching admin ${collectionName}:`, error);
+        
+        // Try cached data for admin queries
+        if (useCache) {
+          const cacheKey = firebaseCache.generateKey(`admin_${collectionName}`, filterOptions);
+          const cached = firebaseCache.get(cacheKey);
+          
+          if (cached) {
+            updateAdminData({
+              [collectionName]: cached,
+              error: null,
+            });
+            return;
+          }
+        }
+        
+        updateAdminData({
+          error: `Lỗi tải ${collectionName}: ${error.message}`,
+        });
+      }
+    );
+  }, [enableRealTime, role, pageSize, useCache, updateAdminData]);
+
+  // Load admin data with performance optimization
+  const loadAdminData = useCallback(async () => {
     if (role !== 'admin') {
-      setAdminData(prev => ({ ...prev, loading: false }));
-      return; // Không phải admin, không tải
+      updateAdminData({ loading: false });
+      return;
     }
 
-    let usersLoaded = false;
-    let transactionsLoaded = false;
-    let ordersLoaded = false;
-    const errors = [];
+    try {
+      updateAdminData({ loading: true, error: null });
 
-    const checkLoadingDone = () => {
-      if (usersLoaded && transactionsLoaded && ordersLoaded) {
-        setAdminData(prev => ({
-          ...prev,
+      // Load cached data first for immediate display
+      const adminCollections = ['users', 'transactions', 'orders'];
+      const cachePromises = adminCollections.map(async (collection) => {
+        if (useCache) {
+          const cacheKey = firebaseCache.generateKey(`admin_${collection}`);
+          const cached = firebaseCache.get(cacheKey);
+          if (cached) {
+            return { [collection]: cached };
+          }
+        }
+        return null;
+      });
+
+      const cachedResults = await Promise.allSettled(cachePromises);
+      const immediateData = {};
+      
+      cachedResults.forEach((result, index) => {
+        if (result.status === 'fulfilled' && result.value) {
+          const collection = adminCollections[index];
+          immediateData[collection] = result.value[collection];
+        }
+      });
+
+      if (Object.keys(immediateData).length > 0) {
+        updateAdminData({
+          ...immediateData,
           loading: false,
-          error: errors.length > 0 ? errors.join(', ') : null,
-        }));
+        });
       }
-    };
 
-    // Tải Users
-    const qUsers = query(collection(db, 'users'));
-    const unsubUsers = onSnapshot(qUsers, (snapshot) => {
-      const userList = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
-      setAdminData(prev => ({ ...prev, users: userList }));
-      usersLoaded = true;
-      checkLoadingDone();
-    }, (err) => {
-      console.error("Lỗi tải danh sách người dùng:", err);
-      errors.push("Lỗi tải người dùng");
-      usersLoaded = true;
-      checkLoadingDone();
-    });
+      // Set up real-time listeners for admin
+      if (enableRealTime) {
+        // Clean up existing listeners
+        unsubscribes.current.forEach(unsub => unsub && unsub());
+        unsubscribes.current = [];
 
-    // Tải Transactions
-    const qTrans = query(collection(db, 'transactions'));
-    const unsubTrans = onSnapshot(qTrans, (snapshot) => {
-      const transList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAdminData(prev => ({ ...prev, transactions: transList }));
-      transactionsLoaded = true;
-      checkLoadingDone();
-    }, (err) => {
-      console.error("Lỗi tải giao dịch:", err);
-      errors.push("Lỗi tải giao dịch");
-      transactionsLoaded = true;
-      checkLoadingDone();
-    });
+        // Create optimized listeners
+        adminCollections.forEach(collection => {
+          const unsub = createAdminListener(collection);
+          if (unsub) {
+            unsubscribes.current.push(unsub);
+          }
+        });
+      }
 
-    // Tải Orders
-    const qOrders = query(collection(db, 'orders'));
-    const unsubOrders = onSnapshot(qOrders, (snapshot) => {
-      const orderList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setAdminData(prev => ({ ...prev, orders: orderList }));
-      ordersLoaded = true;
-      checkLoadingDone();
-    }, (err) => {
-      console.error("Lỗi tải đơn hàng:", err);
-      errors.push("Lỗi tải đơn hàng");
-      ordersLoaded = true;
-      checkLoadingDone();
-    });
+      // Load admin stats if enabled
+      if (enableStats) {
+        loadAdminStats();
+      }
 
+      updateAdminData({ loading: false });
+
+    } catch (error) {
+      console.error('Error loading admin data:', error);
+      updateAdminData({
+        error: 'Lỗi khi tải dữ liệu admin: ' + error.message,
+        loading: false,
+      });
+    }
+  }, [role, enableRealTime, useCache, createAdminListener, enableStats]);
+
+  // Load admin statistics
+  const loadAdminStats = useCallback(async () => {
+    try {
+      trackFirebaseCall('admin_stats');
+      
+      // Get basic counts from cached data first
+      const users = await getCachedDocument('admin_stats', 'users_count') || { count: 0 };
+      const transactions = await getCachedDocument('admin_stats', 'transactions_count') || { count: 0 };
+      const orders = await getCachedDocument('admin_stats', 'orders_count') || { count: 0 };
+      
+      // Try to get real counts if cache is stale
+      const currentTime = Date.now();
+      const cached = firebaseCache.get('admin_stats');
+      const isCacheStale = !cached || (currentTime - cached.timestamp) > CACHE_CONFIG.PUBLIC_DATA_TTL;
+      
+      if (isCacheStale && isFirebaseOnline) {
+        // Get real counts (this is expensive, so we do it less frequently)
+        const [userSnap, transSnap, orderSnap] = await Promise.all([
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'transactions')),
+          getDocs(collection(db, 'orders'))
+        ]);
+        
+        const stats = {
+          totalUsers: userSnap.size,
+          totalTransactions: transSnap.size,
+          totalOrders: orderSnap.size,
+          timestamp: currentTime,
+        };
+        
+        // Cache the stats
+        firebaseCache.set('admin_stats', stats, CACHE_CONFIG.PUBLIC_DATA_TTL);
+        
+        updateAdminData({ stats });
+      } else if (cached) {
+        updateAdminData({ stats: cached });
+      }
+      
+    } catch (error) {
+      console.error('Error loading admin stats:', error);
+    }
+  }, []);
+
+  // Pagination functions for admin data
+  const loadAdminPage = useCallback(async (collection, page = 1, limit = pageSize) => {
+    try {
+      trackFirebaseCall(`admin_paginate:${collection}:${page}:${limit}`);
+      
+      // For admin data, we might want different ordering
+      const orderByField = collection === 'transactions' || collection === 'orders' ? 'createdAt' : 'hoTen';
+      
+      const result = await getCachedCollection(collection, {
+        page,
+        limit,
+        orderBy: orderByField,
+        direction: 'desc',
+        bypassCache: !useCache,
+        cacheTTL: CACHE_CONFIG.ADMIN_DATA_TTL || CACHE_CONFIG.PUBLIC_DATA_TTL
+      });
+
+      setAdminData(prev => ({
+        ...prev,
+        [collection]: result.items,
+        pagination: {
+          ...prev.pagination,
+          [collection]: result.pagination,
+        },
+        lastUpdated: Date.now(),
+      }));
+
+      return result;
+    } catch (error) {
+      console.error(`Error loading admin page ${page} of ${collection}:`, error);
+      setAdminData(prev => ({
+        ...prev,
+        error: `Lỗi tải trang ${page} của ${collection}: ${error.message}`,
+      }));
+      return null;
+    }
+  }, [pageSize, useCache]);
+
+  // Initial load effect
+  useEffect(() => {
+    loadAdminData();
+    
     return () => {
-      unsubUsers();
-      unsubTrans();
-      unsubOrders();
+      // Clean up listeners
+      unsubscribes.current.forEach(unsub => unsub && unsub());
+      unsubscribes.current = [];
     };
-  }, [role]);
+  }, [loadAdminData]);
 
-  return adminData;
+  // Expose admin pagination methods
+  const adminPaginationMethods = useMemo(() => ({
+    loadUsersPage: (page = 1) => loadAdminPage('users', page),
+    loadTransactionsPage: (page = 1) => loadAdminPage('transactions', page),
+    loadOrdersPage: (page = 1) => loadAdminPage('orders', page),
+    refreshStats: loadAdminStats,
+  }), [loadAdminPage, loadAdminStats]);
+
+  return {
+    ...adminData,
+    ...adminPaginationMethods,
+    refresh: loadAdminData,
+  };
 };
 
 // =====================================================
@@ -477,11 +1669,23 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [mode, setMode] = useState('login'); // 'login', 'register', 'reset'
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('rememberMe') === 'true');
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleAuthAction = async (action) => {
+  // Load saved email if remember me was previously checked
+  useEffect(() => {
+    if (rememberMe) {
+      const savedEmail = localStorage.getItem('savedEmail');
+      if (savedEmail) {
+        setEmail(savedEmail);
+      }
+    }
+  }, [rememberMe]);
+
+  // Optimized authentication handler with remember me
+  const handleAuthAction = useCallback(async (action) => {
     setLoading(true);
     setError('');
     setMessage('');
@@ -490,23 +1694,42 @@ const LoginPage = () => {
       if (action === 'google') {
         const provider = new GoogleAuthProvider();
         await signInWithPopup(auth, provider);
-        // onAuthStateChanged sẽ tự động xử lý
-      } 
-      else if (action === 'register') {
+        // onAuthStateChanged sẽ tự động xử lý với remember me preference
+        
+      } else if (action === 'register') {
         if (password.length < 6) {
           throw new Error("Mật khẩu phải có ít nhất 6 ký tự");
         }
         await createUserWithEmailAndPassword(auth, email, password);
-      } 
-      else if (action === 'login') {
-        await signInWithEmailAndPassword(auth, email, password);
-      }
-      else if (action === 'reset') {
+        
+      } else if (action === 'login') {
+        // Save email if remember me is checked
+        if (rememberMe) {
+          localStorage.setItem('savedEmail', email);
+        } else {
+          localStorage.removeItem('savedEmail');
+        }
+        
+        // Store remember me preference
+        localStorage.setItem('rememberMe', rememberMe.toString());
+        
+        // Sign in with Firebase
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        
+        // Get fresh token and save session
+        const token = await userCredential.user.getIdToken();
+        sessionManager.saveSessionData(token, 3600, rememberMe); // 1 hour default
+        
+        console.log(`✅ Login successful${rememberMe ? ' (remembered)' : ''}`);
+        
+      } else if (action === 'reset') {
         await sendPasswordResetEmail(auth, email);
         setMessage('Đã gửi email reset mật khẩu! Vui lòng kiểm tra hòm thư.');
       }
     } catch (err) {
-      console.error(err);
+      console.error('Auth error:', err);
+      
+      // Enhanced error handling
       switch (err.code) {
         case 'auth/user-not-found':
           setError('Không tìm thấy tài khoản với email này.');
@@ -526,13 +1749,33 @@ const LoginPage = () => {
         case 'auth/popup-closed-by-user':
           setError('Bạn đã đóng cửa sổ đăng nhập Google.');
           break;
+        case 'auth/network-request-failed':
+          setError('Lỗi mạng. Vui lòng kiểm tra kết nối internet.');
+          break;
+        case 'auth/too-many-requests':
+          setError('Quá nhiều lần thử. Vui lòng thử lại sau.');
+          break;
         default:
           setError('Đã xảy ra lỗi: ' + err.message);
       }
+      
+      // Clear remember me on error to prevent infinite loops
+      if (action === 'login') {
+        localStorage.removeItem('rememberMe');
+        setRememberMe(false);
+      }
+      
     } finally {
       setLoading(false);
     }
-  };
+  }, [email, password, rememberMe]);
+
+  // Performance monitoring for login page
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 Login page performance stats:', getPerformanceStats());
+    }
+  }, []);
   
   const AuthButton = ({ action, children, className }) => (
     <button
@@ -618,6 +1861,27 @@ const LoginPage = () => {
                 className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none"
               />
             </div>
+            
+            {/* Remember Me and Forgot Password */}
+            {mode === 'login' && (
+              <div className="flex items-center justify-between mb-4">
+                <label className="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="mr-2 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Ghi nhớ đăng nhập</span>
+                </label>
+                <button 
+                  onClick={() => setMode('reset')} 
+                  className="text-sm text-blue-600 hover:text-blue-800 transition"
+                >
+                  Quên mật khẩu?
+                </button>
+              </div>
+            )}
             
             {mode === 'login' && (
               <>
