@@ -52,10 +52,27 @@ const EnhancedButton = ({
     oscillator.stop(audioContext.currentTime + 0.1);
   };
 
-  // 📱 Haptic feedback - disabled to prevent browser warnings
+  // 📱 Haptic feedback - with safety check
   const triggerHaptic = (intensity = 'medium') => {
-    // Vibration disabled for cleaner user experience
-    // Previous attempt caused browser warnings about user gesture requirements
+    if (!haptic) return;
+    
+    // Only vibrate after user interaction (after DOM is ready)
+    if (typeof window !== 'undefined' && window.performance && window.performance.timing) {
+      try {
+        if ('vibrate' in navigator && typeof navigator.vibrate === 'function') {
+          const patterns = {
+            light: 10,
+            medium: 25,
+            heavy: 50
+          };
+          
+          navigator.vibrate(patterns[intensity] || 25);
+        }
+      } catch (error) {
+        // Silently ignore vibration errors
+        console.log('Vibration not available:', error.message);
+      }
+    }
   };
 
   // 🌊 Ripple effect

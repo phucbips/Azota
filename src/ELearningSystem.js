@@ -1547,36 +1547,56 @@ const useAdminData = (role, options = {}) => {
       trackFirebaseCall('admin_stats');
       
       // Get basic counts from cached data first
-      const users = await getCachedDocument('admin_stats', 'users_count') || { count: 0 };
-      const transactions = await getCachedDocument('admin_stats', 'transactions_count') || { count: 0 };
-      const orders = await getCachedDocument('admin_stats', 'orders_count') || { count: 0 };
-      
-      // Try to get real counts if cache is stale
-      const currentTime = Date.now();
-      const cached = firebaseCache.get('admin_stats');
-      const isCacheStale = !cached || (currentTime - cached.timestamp) > CACHE_CONFIG.PUBLIC_DATA_TTL;
-      
-      if (isCacheStale && isFirebaseOnline) {
-        // Get real counts (this is expensive, so we do it less frequently)
-        const [userSnap, transSnap, orderSnap] = await Promise.all([
-          getDocs(collection(db, 'users')),
-          getDocs(collection(db, 'transactions')),
-          getDocs(collection(db, 'orders'))
-        ]);
-        
-        const stats = {
-          totalUsers: userSnap.size,
-          totalTransactions: transSnap.size,
-          totalOrders: orderSnap.size,
-          timestamp: currentTime,
-        };
-        
-        // Cache the stats
-        firebaseCache.set('admin_stats', stats, CACHE_CONFIG.PUBLIC_DATA_TTL);
-        
-        updateAdminData({ stats });
-      } else if (cached) {
+      let cached = firebaseCache.get('admin_stats');
+      if (cached) {
         updateAdminData({ stats: cached });
+        return;
+      }
+      
+      // Try to get real counts with proper permission handling
+      const currentTime = Date.now();
+      if (isFirebaseOnline) {
+        try {
+          const stats = {
+            totalUsers: 0,
+            totalTransactions: 0,
+            totalOrders: 0,
+            timestamp: currentTime,
+          };
+          
+          // Only try to get real data if user has admin role
+          if (role === 'admin') {
+            try {
+              const [userSnap, transSnap, orderSnap] = await Promise.all([
+                getDocs(collection(db, 'users')),
+                getDocs(collection(db, 'transactions')),
+                getDocs(collection(db, 'orders'))
+              ]);
+              
+              stats.totalUsers = userSnap.size;
+              stats.totalTransactions = transSnap.size;
+              stats.totalOrders = orderSnap.size;
+              
+              // Cache the stats
+              firebaseCache.set('admin_stats', stats, CACHE_CONFIG.PUBLIC_DATA_TTL);
+            } catch (permissionError) {
+              // If no permission to read collections, use default stats
+              console.log('No permission to read collections, using default stats');
+            }
+          }
+          
+          updateAdminData({ stats });
+        } catch (error) {
+          console.error('Error loading admin stats:', error);
+          // Use default stats if any error occurs
+          const defaultStats = {
+            totalUsers: 0,
+            totalTransactions: 0,
+            totalOrders: 0,
+            timestamp: currentTime,
+          };
+          updateAdminData({ stats: defaultStats });
+        }
       }
       
     } catch (error) {
@@ -1813,10 +1833,10 @@ const LoginPage = () => {
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full w-24 h-24 flex items-center justify-center mx-auto mb-4 shadow-lg">
             <GraduationCap size={48} />
           </div>
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent mb-2">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
             E-Learning System
           </h1>
           <p className="text-gray-600">Nền tảng học tập trực tuyến</p>
@@ -1853,7 +1873,7 @@ const LoginPage = () => {
                 className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none"
               />
             </div>
-            <AuthButton action="reset" className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:shadow-lg hover:from-purple-700 hover:to-blue-700">
+            <AuthButton action="reset" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg hover:from-purple-700 hover:to-blue-700">
               Gửi link Reset
             </AuthButton>
             <button onClick={() => setMode('login')} className="w-full text-blue-600 font-semibold">
@@ -1911,7 +1931,7 @@ const LoginPage = () => {
             )}
             
             {mode === 'register' && (
-              <AuthButton action="register" className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white hover:shadow-lg hover:from-purple-700 hover:to-blue-700">
+              <AuthButton action="register" className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:shadow-lg hover:from-purple-700 hover:to-blue-700">
                 Đăng ký
               </AuthButton>
             )}
@@ -1991,7 +2011,7 @@ const OnboardingForm = ({ user, onComplete }) => {
     <div className="min-h-screen bg-gradient-to-br from-purple-600 via-blue-600 to-cyan-500 flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
-          <div className="bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
             <Users size={40} />
           </div>
           <h2 className="text-3xl font-bold text-gray-800 mb-2">Chào mừng bạn!</h2>
@@ -2037,7 +2057,7 @@ const OnboardingForm = ({ user, onComplete }) => {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:shadow-2xl transition transform hover:scale-105 disabled:opacity-50"
+            className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:shadow-2xl transition transform hover:scale-105 disabled:opacity-50"
           >
             {loading ? 'Đang lưu...' : 'Xác nhận'}
           </button>
@@ -2236,7 +2256,7 @@ Trình bày dưới dạng gạch đầu dòng ngắn gọn.`;
   };
 
   return (
-    <div className="mt-6 bg-gradient-to-r from-slate-50 to-gray-50 p-6 rounded-2xl border border-blue-200">
+    <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-2xl border border-blue-200">
       <div className="flex items-center gap-3 mb-4">
         <BrainCircuit className="text-blue-600" size={28} />
         <h3 className="text-xl font-bold text-gray-800">Trợ lý AI: Gợi ý kiến thức</h3>
@@ -2482,7 +2502,7 @@ const StudentDashboard = ({ user, onLogout }) => {
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-purple-200">
                       <div>
-                        <span className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">{formatCurrency(course.price)}</span>
+                        <span className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{formatCurrency(course.price)}</span>
                       </div>
                       <EnhancedButton
                         onClick={() => addToCart('course', course.id)}
@@ -2491,7 +2511,7 @@ const StudentDashboard = ({ user, onLogout }) => {
                         size="md"
                         className={cart.courses.includes(course.id) 
                           ? 'bg-green-500 text-white' 
-                          : 'bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                          : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
                         }
                       >
                         {cart.courses.includes(course.id) ? '✓ Đã thêm' : '+ Thêm vào giỏ'}
@@ -2644,7 +2664,7 @@ const StudentDashboard = ({ user, onLogout }) => {
               type="submit"
               disabled={loading}
               loading={loading}
-              className="w-full py-4 text-lg font-bold bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+              className="w-full py-4 text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
               size="lg"
             >
               <Key size={20} />
@@ -2663,9 +2683,14 @@ const StudentDashboard = ({ user, onLogout }) => {
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <div className="bg-gradient-to-r from-slate-600 to-gray-700 text-white shadow-2xl relative overflow-hidden">
-        {/* Background gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-400/5 via-gray-400/5 to-slate-500/5 animate-gradient-x"></div>
+      <div className="bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-600 text-white shadow-2xl relative overflow-hidden">
+        {/* Background animated elements */}
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-cyan-400/20 to-blue-500/20 animate-gradient-x"></div>
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="floating-orb absolute top-4 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
+          <div className="floating-orb absolute top-16 right-20 w-16 h-16 bg-white/15 rounded-full blur-lg animation-delay-1000"></div>
+          <div className="floating-orb absolute bottom-8 left-1/3 w-12 h-12 bg-white/20 rounded-full blur-md animation-delay-2000"></div>
+        </div>
         
         <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
           <div className="flex justify-between items-center">
@@ -2717,7 +2742,7 @@ const StudentDashboard = ({ user, onLogout }) => {
               onClick={() => setView('redeem-key')}
               variant={view === 'redeem-key' ? 'primary' : 'secondary'}
               className={view === 'redeem-key' 
-                ? 'bg-gradient-to-r from-blue-500 to-slate-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
                 : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 border-gray-300'
               }
             >
@@ -2771,7 +2796,7 @@ Không cần đáp án. Chỉ cần câu hỏi và các lựa chọn.
   };
 
   return (
-    <div className="mt-6 bg-gradient-to-r from-slate-50 to-gray-50 p-6 rounded-2xl border border-blue-200">
+    <div className="mt-6 bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-2xl border border-blue-200">
       <div className="flex items-center gap-3 mb-4">
         <BrainCircuit className="text-blue-600" size={28} />
         <h3 className="text-xl font-bold text-gray-800">AI: Gợi ý câu hỏi</h3>
@@ -3647,7 +3672,7 @@ const ManualKeyGenerator = ({ subjects, courses }) => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:shadow-xl transition disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:shadow-xl transition disabled:opacity-50"
         >
           {loading ? <Loader2 className="animate-spin" /> : 'Tạo Key'}
         </button>
