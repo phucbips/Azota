@@ -22,7 +22,26 @@ import KickedModal from './components/KickedModal';
 import { useFormValidation, useErrorHandler, useLoadingState, useAsyncOperation } from './hooks/useFormValidation';
 import { validationSchemas } from './utils/validation';
 
-// Import Toast Manager
+// ✨ Import Enhanced Components
+import EnhancedToastManager, { useEnhancedToast } from './components/EnhancedToast';
+import EnhancedButton, { 
+  SuccessButton, 
+  DangerButton, 
+  MagicalButton, 
+  ActionButton,
+  RainbowButton 
+} from './components/EnhancedButton';
+import EnhancedModal, { 
+  SuccessModal, 
+  ErrorModal, 
+  ConfirmModal, 
+  MagicalModal,
+  AchievementModal,
+  LoadingModal 
+} from './components/EnhancedModal';
+import EnhancedLoginPage from './components/EnhancedLoginPage';
+
+// Import Toast Manager (Legacy fallback)
 import ToastManager from './components/Toast';
 
 // =====================================================
@@ -2076,11 +2095,13 @@ const ShoppingCartComponent = ({ cart, onRemoveItem, onCheckout, loading }) => {
   const total = calculateCartTotal(cart, subjects, courses); // ⚡️ Dùng hàm mới
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6">
+    <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 hover:shadow-2xl transition-all duration-300">
       <div className="flex items-center gap-3 mb-6">
-        <ShoppingCart size={28} className="text-blue-600" />
-        <h2 className="text-2xl font-bold">Giỏ hàng</h2>
-        <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-bold">
+        <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg">
+          <ShoppingCart size={28} className="text-white" />
+        </div>
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Giỏ hàng</h2>
+        <span className="bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 px-3 py-1 rounded-full text-sm font-bold border border-blue-200">
           {cart.subjects.length + cart.courses.length}
         </span>
       </div>
@@ -2114,20 +2135,23 @@ const ShoppingCartComponent = ({ cart, onRemoveItem, onCheckout, loading }) => {
               if (!subject) return null;
 
               return (
-                <div key={subjectId} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div key={subjectId} className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 hover:shadow-md transition-all duration-200 hover-lift">
                   <div className="flex items-center gap-3">
-                    <BookOpen className="text-blue-600" size={24} />
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg">
+                      <BookOpen className="text-white" size={20} />
+                    </div>
                     <div>
-                      <p className="font-semibold">{subject.name}</p>
+                      <p className="font-semibold text-gray-800">{subject.name}</p>
                       <p className="text-sm text-gray-600">{formatCurrency(subject.price)}</p>
                     </div>
                   </div>
-                  <button
+                  <DangerButton
                     onClick={() => onRemoveItem('subject', subjectId)}
-                    className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition"
+                    size="sm"
+                    variant="outline"
                   >
-                    <Trash2 size={20} />
-                  </button>
+                    <Trash2 size={16} />
+                  </DangerButton>
                 </div>
               );
             })}
@@ -2137,40 +2161,46 @@ const ShoppingCartComponent = ({ cart, onRemoveItem, onCheckout, loading }) => {
               if (!course) return null;
 
               return (
-                <div key={courseId} className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl border border-purple-200">
+                <div key={courseId} className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 via-pink-50 to-blue-50 rounded-xl border-2 border-purple-200 hover:shadow-md transition-all duration-200 hover-lift">
                   <div className="flex items-center gap-3">
-                    <Package className="text-purple-600" size={24} />
+                    <div className="p-2 bg-gradient-to-r from-purple-500 to-blue-600 rounded-lg">
+                      <Package className="text-white" size={20} />
+                    </div>
                     <div>
-                      <p className="font-semibold">{course.name}</p>
+                      <p className="font-semibold text-gray-800">{course.name}</p>
                       <p className="text-sm text-gray-600">{formatCurrency(course.price)}</p>
                     </div>
                   </div>
-                  <button
+                  <DangerButton
                     onClick={() => onRemoveItem('course', courseId)}
-                    className="text-red-500 hover:bg-red-50 p-2 rounded-lg transition"
+                    size="sm"
+                    variant="outline"
                   >
-                    <Trash2 size={20} />
-                  </button>
+                    <Trash2 size={16} />
+                  </DangerButton>
                 </div>
               );
             })}
           </div>
 
-          <div className="border-t-2 border-gray-200 pt-4">
+          <div className="border-t-2 border-gradient bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 pt-4">
             <div className="flex justify-between items-center mb-4">
-              <span className="text-xl font-bold">Tổng cộng:</span>
-              <span className="text-3xl font-bold text-blue-600">{formatCurrency(total)}</span>
+              <span className="text-xl font-bold text-gray-700">Tổng cộng:</span>
+              <span className="text-3xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                {formatCurrency(total)}
+              </span>
             </div>
 
-            <button
+            <SuccessButton
               onClick={onCheckout}
               disabled={conflicts.length > 0 || loading}
-              className="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:shadow-xl transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              loading={loading}
+              className="w-full py-4 bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-600 hover:from-emerald-600 hover:via-cyan-600 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none"
+              size="lg"
             >
-              {/* ⚡️ THAY ĐỔI: Icon và Text */}
-              {loading ? <Loader2 className="animate-spin" /> : <Send size={24} />}
-              {loading ? 'Đang gửi...' : (conflicts.length > 0 ? 'Vui lòng xóa môn trùng lặp' : 'Gửi yêu cầu duyệt')}
-            </button>
+              <Send size={24} />
+              {conflicts.length > 0 ? 'Vui lòng xóa môn trùng lặp' : 'Gửi yêu cầu duyệt'}
+            </SuccessButton>
           </div>
         </>
       )}
@@ -2369,26 +2399,28 @@ const StudentDashboard = ({ user, onLogout }) => {
         <div className="lg:col-span-2">
           
           <div className="flex gap-2 mb-6">
-            <button
+            <EnhancedButton
               onClick={() => setShopTab('subjects')}
-              className={`px-6 py-3 rounded-xl font-semibold transition text-lg flex items-center gap-2 ${
-                shopTab === 'subjects'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+              variant={shopTab === 'subjects' ? 'primary' : 'secondary'}
+              className={shopTab === 'subjects' 
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg hover:shadow-xl' 
+                : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-300'
+              }
+              size="lg"
             >
               <BookOpen size={20} /> Môn học
-            </button>
-            <button
+            </EnhancedButton>
+            <EnhancedButton
               onClick={() => setShopTab('courses')}
-              className={`px-6 py-3 rounded-xl font-semibold transition text-lg flex items-center gap-2 ${
-                shopTab === 'courses'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+              variant={shopTab === 'courses' ? 'primary' : 'secondary'}
+              className={shopTab === 'courses' 
+                ? 'bg-gradient-to-r from-purple-500 to-blue-600 text-white shadow-lg hover:shadow-xl' 
+                : 'bg-white text-gray-700 hover:bg-gray-100 border-gray-300'
+              }
+              size="lg"
             >
               <Package size={20} /> Khóa học
-            </button>
+            </EnhancedButton>
           </div>
 
           {shopTab === 'subjects' && (
@@ -2404,14 +2436,19 @@ const StudentDashboard = ({ user, onLogout }) => {
                       <BookOpen className="text-blue-600" size={32} />
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-2xl font-bold text-blue-600">{formatCurrency(subject.price)}</span>
-                      <button
+                      <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{formatCurrency(subject.price)}</span>
+                      <EnhancedButton
                         onClick={() => addToCart('subject', subject.id)}
                         disabled={cart.subjects.includes(subject.id)}
-                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        variant={cart.subjects.includes(subject.id) ? 'success' : 'primary'}
+                        size="sm"
+                        className={cart.subjects.includes(subject.id) 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700'
+                        }
                       >
                         {cart.subjects.includes(subject.id) ? '✓ Đã thêm' : '+ Thêm'}
-                      </button>
+                      </EnhancedButton>
                     </div>
                   </div>
                 ))}
@@ -2445,15 +2482,20 @@ const StudentDashboard = ({ user, onLogout }) => {
                     </div>
                     <div className="flex items-center justify-between pt-4 border-t border-purple-200">
                       <div>
-                        <span className="text-3xl font-bold text-purple-600">{formatCurrency(course.price)}</span>
+                        <span className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">{formatCurrency(course.price)}</span>
                       </div>
-                      <button
+                      <EnhancedButton
                         onClick={() => addToCart('course', course.id)}
                         disabled={cart.courses.includes(course.id)}
-                        className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed font-bold"
+                        variant={cart.courses.includes(course.id) ? 'success' : 'primary'}
+                        size="md"
+                        className={cart.courses.includes(course.id) 
+                          ? 'bg-green-500 text-white' 
+                          : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl'
+                        }
                       >
                         {cart.courses.includes(course.id) ? '✓ Đã thêm' : '+ Thêm vào giỏ'}
-                      </button>
+                      </EnhancedButton>
                     </div>
                   </div>
                 ))}
@@ -2587,7 +2629,7 @@ const StudentDashboard = ({ user, onLogout }) => {
           
           <form onSubmit={handleRedeem} className="space-y-6">
             <div>
-              <label className="block text-sm font-bold text-gray-700 mb-2">
+              <label className="block text-sm font-bold text-gray-700 mb-3">
                 Mã Key
               </label>
               <input
@@ -2595,16 +2637,19 @@ const StudentDashboard = ({ user, onLogout }) => {
                 value={key}
                 onChange={(e) => setKey(e.target.value.toUpperCase())}
                 placeholder="XXXX-XXXX-XXXX"
-                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:border-blue-500 focus:outline-none uppercase tracking-widest"
+                className="enhanced-input w-full px-6 py-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none focus:ring-4 focus:ring-purple-500/20 uppercase tracking-widest text-center text-lg font-mono bg-gradient-to-r from-white to-purple-50 transition-all duration-300 hover:shadow-lg"
               />
             </div>
-            <button
+            <SuccessButton
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 rounded-xl hover:shadow-2xl transition disabled:opacity-50"
+              loading={loading}
+              className="w-full py-4 text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+              size="lg"
             >
-              {loading ? <Loader2 className="animate-spin" /> : 'Kích hoạt'}
-            </button>
+              <Key size={20} />
+              Kích hoạt Key
+            </SuccessButton>
           </form>
         </div>
       </div>
@@ -2617,55 +2662,72 @@ const StudentDashboard = ({ user, onLogout }) => {
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-6 py-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-600 text-white shadow-2xl relative overflow-hidden">
+        {/* Background animated elements */}
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 via-cyan-400/20 to-blue-500/20 animate-gradient-x"></div>
+        <div className="absolute top-0 left-0 w-full h-full">
+          <div className="floating-orb absolute top-4 left-10 w-20 h-20 bg-white/10 rounded-full blur-xl"></div>
+          <div className="floating-orb absolute top-16 right-20 w-16 h-16 bg-white/15 rounded-full blur-lg animation-delay-1000"></div>
+          <div className="floating-orb absolute bottom-8 left-1/3 w-12 h-12 bg-white/20 rounded-full blur-md animation-delay-2000"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-6 py-8 relative z-10">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">👨‍🎓 {user.hoTen}</h1>
-              <p className="text-green-100 mt-1">Học sinh - Lớp {user.lop}</p>
+            <div className="hover-lift">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-cyan-100 bg-clip-text text-transparent drop-shadow-lg">
+                👨‍🎓 {user.hoTen}
+              </h1>
+              <p className="text-emerald-100 mt-2 text-lg font-medium animate-slide-up animation-delay-300">
+                Học sinh - Lớp {user.lop}
+              </p>
             </div>
-            <button
+            <EnhancedButton
               onClick={onLogout}
-              className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-6 py-3 rounded-xl transition"
+              variant="secondary"
+              className="bg-white/20 hover:bg-white/30 text-white border-white/30 hover:border-white/50 backdrop-blur-sm"
             >
               <LogOut size={20} />
               Đăng xuất
-            </button>
+            </EnhancedButton>
           </div>
         </div>
       </div>
 
-      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+      <div className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-white/20 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-2 py-4">
-            <button
+          <div className="flex gap-3 py-5">
+            <EnhancedButton
               onClick={() => setView('my-quizzes')}
-              className={`px-6 py-3 rounded-xl font-semibold transition flex items-center gap-2 ${
-                view === 'my-quizzes'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              variant={view === 'my-quizzes' ? 'primary' : 'secondary'}
+              className={view === 'my-quizzes' 
+                ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
+                : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 border-gray-300'
+              }
             >
               <CheckCircle2 size={20} /> Bài tập của tôi
-            </button>
-            <button
+            </EnhancedButton>
+            <EnhancedButton
               onClick={() => setView('shop')}
-              className={`px-6 py-3 rounded-xl font-semibold transition flex items-center gap-2 ${
-                view === 'shop'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              variant={view === 'shop' ? 'primary' : 'secondary'}
+              className={view === 'shop' 
+                ? 'bg-gradient-to-r from-emerald-500 to-cyan-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
+                : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 border-gray-300'
+              }
             >
               <ShoppingCart size={20} /> Cửa hàng
-            </button>
-            {/* ⚡️ MỚI: Nút Kích hoạt Key */}
-            <button
+            </EnhancedButton>
+            {/* ⚡️ MỚI: Nút Kích hoạt Key với Enhanced Button */}
+            <EnhancedButton
               onClick={() => setView('redeem-key')}
-              className={`px-6 py-3 rounded-xl font-semibold transition flex items-center gap-2 ${
-                view === 'redeem-key'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              variant={view === 'redeem-key' ? 'primary' : 'secondary'}
+              className={view === 'redeem-key' 
+                ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-lg hover:shadow-xl transform hover:scale-105' 
+                : 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-700 hover:from-gray-200 hover:to-gray-300 border-gray-300'
+              }
+            >
+              <Key size={20} /> Kích hoạt Key
+            </EnhancedButton>
               }`}
             >
               <Ticket size={20} /> Kích hoạt Key
@@ -3886,7 +3948,7 @@ const AppRouter = () => {
   return (
     <DataContext.Provider value={dataState}>
       {!authUser ? (
-        <LoginPage />
+        <EnhancedLoginPage />
       ) : needsOnboarding ? (
         <OnboardingForm user={authUser} onComplete={setOnboardingCompleted} />
       ) : !currentUser ? (

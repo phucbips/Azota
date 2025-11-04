@@ -3,6 +3,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ✨ Enhanced Animations Import */
+@import './styles/enhanced-animations.css';
+
 /* Base styles and imports */
 body {
   margin: 0;
