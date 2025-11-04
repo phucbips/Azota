@@ -1,587 +1,313 @@
-![Azota](https://img.shields.io/badge/Azota-E--Learning%20System-blue?style=for-the-badge&logo=graduation-cap)
-![React](https://img.shields.io/badge/React-19.2.0-61DAFB?style=for-the-badge&logo=react)
-![Firebase](https://img.shields.io/badge/Firebase-11.1.0-FFCA28?style=for-the-badge&logo=firebase)
-![Vercel](https://img.shields.io/badge/Vercel-Deploy-black?style=for-the-badge&logo=vercel)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
+# Azota Frontend - Hệ thống quản lý học sinh
 
-# 🎓 Azota E-Learning System
+Ứng dụng React.js được xây dựng để quản lý học sinh với Firebase backend, hỗ trợ authentication, quản lý dữ liệu học sinh và giao diện người dùng hiện đại.
 
-Hệ thống học tập trực tuyến Azota là một nền tảng giáo dục hiện đại được xây dựng với React và Firebase, cung cấp trải nghiệm học tập tương tác và quản lý khóa học toàn diện.
+## 🚀 Tính năng chính
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Site-4CAF50?style=for-the-badge&logo=vercel)](https://your-app.vercel.app)
-[![Documentation](https://img.shields.io/badge/Documentation-View%20Docs-2196F3?style=for-the-badge&logo=gitbook)](./docs)
-[![Issues](https://img.shields.io/badge/Issues-Report%20Bug-FF5722?style=for-the-badge&logo=github)](https://github.com/your-repo/azota/issues)
-
-## ✨ Tính năng chính
-
-### 🎯 Hệ thống học tập
-- **📚 Quản lý khóa học** - Tạo, chỉnh sửa và quản lý khóa học một cách dễ dàng
-- **🧠 Quiz & Bài tập** - Hệ thống câu hỏi tương tác với nhiều loại format
-- **📊 Theo dõi tiến độ** - Dashboard chi tiết theo dõi học tập của học viên
-- **🎯 Hệ thống điểm thưởng** - Khuyến khích học tập với điểm số và danh hiệu
-
-### 🔐 Quản lý truy cập
-- **🔑 Access Key System** - Quản lý quyền truy cập khóa học thông qua access key
-- **👥 Phân quyền người dùng** - Admin, Student với các quyền khác nhau
-- **🛡️ Bảo mật Firebase** - Authentication và Firestore database an toàn
-
-### 💻 Giao diện người dùng
-- **📱 Responsive Design** - Hoạt động tốt trên mọi thiết bị
-- **🎨 Modern UI** - Giao diện đẹp mắt với TailwindCSS và Lucide Icons
-- **⚡ Performance Optimized** - Lazy loading và tối ưu hóa hiệu suất
-- **🔄 Real-time Updates** - Cập nhật thời gian thực với Firebase
-
-### 🛠️ Tính năng kỹ thuật
-- **🔧 Error Handling** - Xử lý lỗi toàn diện với Error Boundary
-- **📊 Loading States** - Skeleton loaders và progress indicators
-- **✅ Form Validation** - Validation real-time với visual feedback
-- **🚀 API Integration** - Backend API với Express.js trên Vercel
-
-## 🏗️ Technology Stack
-
-### Frontend
-- **React 19.2.0** - Modern React với hooks và context
-- **React Router** - Client-side routing
-- **TailwindCSS** - Utility-first CSS framework
-- **Lucide React** - Modern icon library
-- **Firebase SDK** - Authentication và Firestore
-
-### Backend
-- **Vercel API Functions** - Serverless API endpoints
-- **Express.js** - Node.js web framework
-- **Firebase Admin SDK** - Server-side Firebase operations
-- **Helmet & CORS** - Security middleware
-
-### Database & Authentication
-- **Firebase Firestore** - NoSQL database
-- **Firebase Auth** - User authentication
-- **Google Auth Provider** - Social login
-
-### Deployment & Tools
-- **Vercel** - Frontend và Backend deployment
-- **npm** - Package management
-- **ESLint** - Code linting
-- **Web Vitals** - Performance monitoring
+- **Authentication**: Đăng nhập/đăng ký với Firebase Auth
+- **Quản lý học sinh**: CRUD operations cho dữ liệu học sinh
+- **Real-time updates**: Cập nhật dữ liệu real-time với Firestore
+- **Responsive design**: Giao diện responsive với Tailwind CSS
+- **Form validation**: Validation toàn diện cho forms
+- **Error handling**: Xử lý lỗi với Error Boundaries
+- **Toast notifications**: Hệ thống thông báo cho người dùng
+- **Loading states**: Các trạng thái loading cho UX tốt hơn
+- **PWA ready**: Progressive Web App support
 
 ## 📋 Yêu cầu hệ thống
 
-- **Node.js** >= 16.0.0
-- **npm** >= 8.0.0
-- **Firebase Account** - Để tạo project và lấy credentials
-- **Vercel Account** - Để deploy (có thể dùng free tier)
+- Node.js >= 16.0.0
+- npm >= 7.0.0 hoặc yarn >= 1.22.0
+- Firebase project với Firestore và Authentication được kích hoạt
 
-## 🚀 Installation & Setup
+## 🛠 Cài đặt
 
-### 1. Clone Repository
+### 1. Clone và cài đặt dependencies
+
 ```bash
-git clone https://github.com/your-repo/azota.git
-cd azota
+# Clone repository
+git clone <repository-url>
+cd azota-frontend
+
+# Cài đặt dependencies
+npm install
+# hoặc
+yarn install
 ```
 
-### 2. Cài đặt Dependencies
-```bash
-# Frontend dependencies
-npm install
+### 2. Cấu hình Environment Variables
 
-# Backend API dependencies
-cd api
-npm install
-cd ..
+Tạo file `.env` trong thư mục gốc với các biến môi trường sau:
+
+```env
+# Firebase Configuration
+REACT_APP_FIREBASE_API_KEY=your_api_key_here
+REACT_APP_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+REACT_APP_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+REACT_APP_FIREBASE_APP_ID=your_app_id
+REACT_APP_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+# API Configuration (nếu có)
+REACT_APP_API_URL=http://localhost:3001/api
+
+# Environment
+REACT_APP_ENV=development
 ```
 
 ### 3. Firebase Setup
 
-#### Bước 1: Tạo Firebase Project
-1. Truy cập [Firebase Console](https://console.firebase.google.com/)
-2. Click "Add project" và làm theo hướng dẫn
-3. Enable **Authentication** và **Firestore Database**
-4. Trong Authentication > Sign-in method, enable **Google** provider
+1. Tạo Firebase project tại [Firebase Console](https://console.firebase.google.com/)
+2. Kích hoạt Authentication với Email/Password
+3. Tạo Firestore database
+4. Copy configuration từ Firebase Console vào file `.env`
 
-#### Bước 2: Lấy Firebase Configuration
-1. Vào **Project Settings** (biểu tượng bánh răng)
-2. Chọn tab **General**
-3. Trong mục **Your apps**, click **Web** icon (</>)
-4. Đặt tên app và click **Register app**
-5. Copy Firebase config object
+## 🚀 Chạy ứng dụng
 
-#### Bước 3: Cấu hình Environment Variables
-Tạo file `.env.local` trong thư mục root:
+### Development Mode
 
-```env
-# Firebase Configuration (Frontend)
-REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your-project-id.firebasestorage.app
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=123456789012
-REACT_APP_FIREBASE_APP_ID=1:123456789012:web:abcdef123456789
-
-# Firebase Admin Configuration (Backend)
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxx@your-project-id.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
-
-# API Configuration
-REACT_APP_API_URL=https://your-app.vercel.app/api
+```bash
+npm start
+# hoặc
+yarn start
 ```
 
-#### Bước 4: Firebase Admin Setup
-1. Vào Firebase Console > Project Settings > Service Accounts
-2. Click "Generate new private key"
-3. Download file JSON và extract thông tin:
-   - `project_id`
-   - `client_email`
-   - `private_key`
+Ứng dụng sẽ chạy tại `http://localhost:3000`
 
-### 4. Chạy Local Development
+### Production Build
+
 ```bash
-# Start frontend development server
-npm start
-
-# API server sẽ chạy trên port 3001
-# Frontend chạy trên port 3000
+npm run build
+# hoặc
+yarn build
 ```
 
-Ứng dụng sẽ khả dụng tại: http://localhost:3000
+Build files sẽ được tạo trong thư mục `build/`
 
-## 📝 Environment Variables
+### Testing
 
-### Frontend Variables (`REACT_APP_*`)
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `REACT_APP_FIREBASE_API_KEY` | Firebase API Key | ✅ |
-| `REACT_APP_FIREBASE_AUTH_DOMAIN` | Firebase Auth Domain | ✅ |
-| `REACT_APP_FIREBASE_PROJECT_ID` | Firebase Project ID | ✅ |
-| `REACT_APP_FIREBASE_STORAGE_BUCKET` | Firebase Storage Bucket | ✅ |
-| `REACT_APP_FIREBASE_MESSAGING_SENDER_ID` | Firebase Messaging Sender ID | ✅ |
-| `REACT_APP_FIREBASE_APP_ID` | Firebase App ID | ✅ |
-| `REACT_APP_API_URL` | API Endpoint URL | ❌ |
-
-### Backend Variables (Server-side only)
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `FIREBASE_PROJECT_ID` | Firebase Project ID | ✅ |
-| `FIREBASE_CLIENT_EMAIL` | Firebase Admin Email | ✅ |
-| `FIREBASE_PRIVATE_KEY` | Firebase Admin Private Key | ✅ |
-
-> **Lưu ý**: Các biến `REACT_APP_*` sẽ được expose trong client-side code. Đây là thiết kế bình thường của Firebase Client SDK.
-
-## 🎯 Available Scripts
-
-### Development Scripts
 ```bash
-# Chạy development server
-npm start
-
-# Chạy tests
 npm test
-
-# Build for production
-npm run build
-
-# Eject configuration (one-way operation)
-npm run eject
+# hoặc
+yarn test
 ```
 
-### Code Quality
-```bash
-# Lint code
-npm run lint
-
-# Fix linting errors
-npm run lint:fix
-```
-
-### Build & Deploy
-```bash
-# Build và preview production build locally
-npm run build
-npx serve -s build
-
-# Deploy to Vercel
-npx vercel --prod
-```
-
-## 📁 Project Structure
+## 📁 Cấu trúc Project
 
 ```
-azota/
-├── 📁 api/                     # Backend API functions
-│   ├── createAccessKey.js      # Tạo access key mới
-│   ├── grantRole.js           # Cấp quyền người dùng
-│   ├── redeemAccessKey.js     # Sử dụng access key
-│   ├── requestOrder.js        # Xử lý đơn hàng
-│   ├── lib/
-│   │   └── firebaseAdmin.js   # Firebase Admin configuration
-│   ├── middleware/
-│   │   ├── auth.js           # Authentication middleware
-│   │   ├── validation.js     # Request validation
-│   │   └── caching.js        # Response caching
-│   └── utils/
-│       └── security.js       # Security utilities
-├── 📁 src/                    # Frontend source code
-│   ├── components/           # Reusable UI components
-│   │   ├── ErrorBoundary.js  # Error boundary component
-│   │   ├── LoadingComponents.js # Loading states & skeletons
-│   │   ├── Toast.js         # Notification system
-│   │   ├── LoginPage.js     # Login component
-│   │   ├── StudentDashboard.js # Student dashboard
-│   │   └── ...
-│   ├── hooks/               # Custom React hooks
-│   │   ├── useAuth.js      # Authentication hook
-│   │   ├── useFormValidation.js # Form validation hook
-│   │   ├── useAdminData.js # Admin data hook
-│   │   └── usePublicData.js # Public data hook
-│   ├── utils/              # Utility functions
-│   │   ├── firebase.js    # Firebase client config
-│   │   ├── apiWrapper.js  # API client wrapper
-│   │   ├── validation.js  # Validation schemas
-│   │   └── helpers.js     # Helper functions
-│   ├── styles/            # CSS styles
-│   │   └── loading-animations.css # Loading animations
-│   ├── tests/             # Test files
-│   ├── App.js             # Main App component
-│   ├── ELearningSystem.js # Main E-Learning system
-│   └── index.js           # React entry point
-├── 📁 public/             # Static files
-├── 📁 build/              # Production build output
-├── package.json           # Dependencies & scripts
-├── vercel.json            # Vercel configuration
-├── firebase.json          # Firebase configuration
-└── tailwind.config.js     # TailwindCSS configuration
+src/
+├── components/          # React components
+│   ├── ErrorBoundary.js    # Error handling
+│   ├── KickedModal.js      # Session expiration modal
+│   ├── LoadingComponents.js # Loading states
+│   └── Toast.js           # Toast notifications
+├── hooks/              # Custom React hooks
+│   └── useFormValidation.js # Form validation hook
+├── utils/              # Utility functions
+│   ├── firebase.js      # Firebase configuration
+│   └── validation.js    # Validation rules
+├── App.js              # Main App component
+├── index.js            # App entry point
+└── index.css           # Global styles
 ```
 
-## 🔌 API Documentation
+## 🔧 Cấu hình Firebase
 
-### Authentication Endpoints
-Tất cả endpoints yêu cầu authentication token trong header:
-```
-Authorization: Bearer <firebase_id_token>
-```
+### Authentication Setup
 
-### Access Key Management
+1. Đăng nhập Firebase Console
+2. Chọn Authentication > Sign-in method
+3. Kích hoạt Email/Password provider
+4. Cấu hình authorized domains
 
-#### 🔑 Create Access Key
-```http
-POST /api/createAccessKey
-Content-Type: application/json
+### Firestore Setup
 
-{
-  "courseId": "course123",
-  "role": "student",
-  "expiresAt": "2024-12-31T23:59:59Z"
-}
-```
+1. Chọn Firestore Database
+2. Tạo database trong production mode
+3. Cấu hình security rules:
 
-#### 🎯 Redeem Access Key
-```http
-POST /api/redeemAccessKey
-Content-Type: application/json
-
-{
-  "accessKey": "AK-123456789",
-  "courseId": "course123"
-}
-```
-
-#### 👤 Grant Role
-```http
-POST /api/grantRole
-Content-Type: application/json
-
-{
-  "userId": "user123",
-  "role": "student",
-  "courseId": "course123"
-}
-```
-
-#### 📦 Request Order
-```http
-POST /api/requestOrder
-Content-Type: application/json
-
-{
-  "productId": "course123",
-  "quantity": 1,
-  "userId": "user123"
-}
-```
-
-### Response Format
-```json
-{
-  "success": true,
-  "data": {
-    // Response data
-  },
-  "message": "Operation completed successfully"
-}
-```
-
-### Error Response
-```json
-{
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Error description"
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Chỉ authenticated users có thể truy cập
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
   }
 }
 ```
 
-## 🚀 Deployment Guide
+## 📦 Dependencies
 
-### Deploy to Vercel (Recommended)
+### Core Dependencies
+- **react** ^19.2.0 - React framework
+- **react-dom** ^19.2.0 - React DOM renderer
+- **react-scripts** 5.0.1 - Create React App scripts
 
-#### Method 1: Vercel CLI
+### Firebase & Backend
+- **firebase** ^11.1.0 - Firebase SDK
+
+### Styling & UI
+- **tailwindcss** ^3.4.1 - Utility-first CSS framework
+- **lucide-react** ^0.469.0 - Icon library
+- **autoprefixer** ^10.4.19 - CSS post-processor
+- **postcss** ^8.4.38 - CSS transformation tool
+
+### Testing
+- **@testing-library/react** ^16.3.0 - React testing utilities
+- **@testing-library/jest-dom** ^6.9.1 - Jest DOM matchers
+- **@testing-library/user-event** ^14.6.1 - User event simulation
+
+### Performance
+- **web-vitals** ^4.2.4 - Core web vitals measurement
+
+## 🌐 Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| REACT_APP_FIREBASE_API_KEY | Firebase API key | ✅ |
+| REACT_APP_FIREBASE_AUTH_DOMAIN | Firebase auth domain | ✅ |
+| REACT_APP_FIREBASE_PROJECT_ID | Firebase project ID | ✅ |
+| REACT_APP_FIREBASE_STORAGE_BUCKET | Firebase storage bucket | ✅ |
+| REACT_APP_FIREBASE_MESSAGING_SENDER_ID | Firebase messaging sender ID | ✅ |
+| REACT_APP_FIREBASE_APP_ID | Firebase app ID | ✅ |
+| REACT_APP_FIREBASE_MEASUREMENT_ID | Firebase measurement ID | ⚪ |
+| REACT_APP_API_URL | Backend API URL | ⚪ |
+| REACT_APP_ENV | Environment (development/production) | ⚪ |
+
+## 🚀 Deployment
+
+### Netlify
+
+1. Kết nối repository với Netlify
+2. Set build command: `npm run build`
+3. Set publish directory: `build`
+4. Thêm environment variables trong Netlify dashboard
+5. Deploy
+
+### Vercel
+
+1. Import repository vào Vercel
+2. Framework preset: Create React App
+3. Thêm environment variables
+4. Deploy
+
+### Firebase Hosting
+
+1. Install Firebase CLI: `npm install -g firebase-tools`
+2. Login: `firebase login`
+3. Init: `firebase init hosting`
+4. Build: `npm run build`
+5. Deploy: `firebase deploy`
+
+### GitHub Pages
+
+1. Install gh-pages: `npm install --save-dev gh-pages`
+2. Add scripts to package.json:
+   ```json
+   "predeploy": "npm run build",
+   "deploy": "gh-pages -d build"
+   ```
+3. Deploy: `npm run deploy`
+
+## 🐛 Troubleshooting
+
+### Firebase Configuration Issues
+
+- Đảm bảo Firebase config đúng trong `.env`
+- Kiểm tra Firebase project đã được kích hoạt đầy đủ services
+- Verify authorized domains trong Firebase Console
+
+### Build Issues
+
+- Xóa `node_modules` và cài đặt lại: `rm -rf node_modules && npm install`
+- Clear npm cache: `npm cache clean --force`
+- Kiểm tra Node.js version: `node --version`
+
+### Runtime Issues
+
+- Kiểm tra console errors trong browser DevTools
+- Verify Firebase rules allow truy cập data
+- Check network requests trong Network tab
+
+## 📝 Development Guidelines
+
+### Code Style
+- Sử dụng ESLint rules đã cấu hình
+- Follow React best practices
+- Sử dụng functional components với hooks
+- Đặt tên files với PascalCase cho components
+
+### Error Handling
+- Sử dụng ErrorBoundary cho component errors
+- Validate forms với useFormValidation hook
+- Handle Firebase errors gracefully
+- Hiển thị user-friendly error messages
+
+### Performance
+- Lazy load components khi cần thiết
+- Optimize Firebase queries
+- Sử dụng React.memo cho expensive components
+- Monitor performance với web-vitals
+
+## 🔧 Troubleshooting
+
+### Vấn đề NPM Permissions
+
+Nếu gặp lỗi `EACCES: permission denied` khi chạy `npm install`:
+
 ```bash
-# Install Vercel CLI
-npm i -g vercel
+# Giải pháp 1: Cài đặt với sudo (Linux/macOS)
+sudo npm install
 
-# Login to Vercel
-vercel login
-
-# Deploy from project directory
-vercel
-
-# Deploy to production
-vercel --prod
-```
-
-#### Method 2: GitHub Integration
-1. Push code lên GitHub repository
-2. Truy cập [Vercel Dashboard](https://vercel.com/dashboard)
-3. Click "New Project"
-4. Import từ GitHub repository
-5. Vercel sẽ tự động detect React app và build
-
-#### Environment Variables trên Vercel
-Trong Vercel Dashboard > Settings > Environment Variables:
-
-**Frontend Variables:**
-```
-REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-project-id.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your-project-id.firebasestorage.app
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=123456789012
-REACT_APP_FIREBASE_APP_ID=1:123456789012:web:abcdef123456789
-```
-
-**Backend Variables:**
-```
-FIREBASE_PROJECT_ID=your-project-id
-FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxx@your-project-id.iam.gserviceaccount.com
-FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nYOUR_PRIVATE_KEY\n-----END PRIVATE KEY-----\n"
-```
-
-### Deploy to Other Platforms
-
-#### Netlify
-1. Connect GitHub repository to Netlify
-2. Build command: `npm run build`
-3. Publish directory: `build`
-4. Add environment variables trong Netlify dashboard
-
-#### Firebase Hosting
-```bash
-# Install Firebase CLI
-npm install -g firebase-tools
-
-# Login to Firebase
-firebase login
-
-# Initialize Firebase hosting
-firebase init hosting
-
-# Deploy
-firebase deploy
-```
-
-## 🧪 Testing
-
-### Running Tests
-```bash
-# Run all tests
-npm test
-
-# Run tests with coverage
-npm test -- --coverage
-
-# Run tests in watch mode
-npm test -- --watch
-```
-
-### Test Structure
-```
-src/tests/
-├── error-handling-examples.js # Error handling test examples
-├── components/               # Component tests
-├── hooks/                   # Hook tests
-└── utils/                   # Utility tests
-```
-
-## 🤝 Contributing Guidelines
-
-### Development Workflow
-1. **Fork** repository
-2. **Clone** fork về local: `git clone https://github.com/your-username/azota.git`
-3. **Create branch** cho feature: `git checkout -b feature/amazing-feature`
-4. **Commit** changes: `git commit -m 'Add amazing feature'`
-5. **Push** to branch: `git push origin feature/amazing-feature`
-6. **Create Pull Request**
-
-### Code Standards
-- Follow **ESLint** rules (đã được cấu hình sẵn)
-- Use **Prettier** cho code formatting
-- Write **meaningful commit messages**
-- Add **JSDoc comments** cho functions
-- Include **tests** cho new features
-
-### Commit Message Format
-```
-type(scope): short description
-
-Longer description if needed.
-
-- Point 1
-- Point 2
-
-Fixes #123
-```
-
-**Types:**
-- `feat`: New feature
-- `fix`: Bug fix
-- `docs`: Documentation changes
-- `style`: Code style changes (formatting, etc)
-- `refactor`: Code refactoring
-- `test`: Adding or updating tests
-- `chore`: Maintenance tasks
-
-### Pull Request Guidelines
-- ✅ Mô tả rõ ràng về feature/fix
-- ✅ Include screenshots cho UI changes
-- ✅ Ensure all tests pass
-- ✅ Update documentation nếu cần
-- ✅ Follow code style guidelines
-
-## 📊 Performance
-
-### Optimization Features
-- **Lazy Loading** - Components được load khi cần thiết
-- **Code Splitting** - Bundle được chia nhỏ để load nhanh hơn
-- **Caching** - API responses được cache để giảm network calls
-- **Error Boundaries** - Ứng dụng không crash khi có lỗi
-- **Skeleton Loaders** - UI feedback tốt hơn khi loading
-
-### Monitoring
-- **Web Vitals** - Performance metrics tracking
-- **Firebase Analytics** - User behavior analysis
-- **Vercel Analytics** - Build và runtime performance
-
-## 🔒 Security
-
-### Security Measures
-- **Environment Variables** - Sensitive data được lưu trong env vars
-- **Firebase Security Rules** - Database access được kiểm soát
-- **Input Validation** - Tất cả inputs được validate
-- **CORS Configuration** - Proper CORS setup cho API
-- **Rate Limiting** - API rate limiting để prevent abuse
-
-### Best Practices
-- Never commit sensitive data to git
-- Use HTTPS trong production
-- Keep dependencies updated
-- Follow OWASP security guidelines
-
-## 📱 Browser Support
-
-| Browser | Version | Support |
-|---------|---------|---------|
-| Chrome | 88+ | ✅ Full |
-| Firefox | 85+ | ✅ Full |
-| Safari | 14+ | ✅ Full |
-| Edge | 88+ | ✅ Full |
-| Mobile Safari | 14+ | ✅ Full |
-| Chrome Mobile | 88+ | ✅ Full |
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-#### Firebase Connection Issues
-```bash
-# Check Firebase config
-console.log(firebase.app().options);
-
-# Verify environment variables
-echo $REACT_APP_FIREBASE_API_KEY
-```
-
-#### Build Errors
-```bash
-# Clear npm cache
-npm cache clean --force
-
-# Delete node_modules và reinstall
-rm -rf node_modules
+# Giải pháp 2: Reset npm config và thử lại
+npm config delete prefix
 npm install
 
-# Clear build cache
-rm -rf build
-npm run build
+# Giải pháp 3: Dùng yarn thay vì npm
+npm install -g yarn
+yarn install
+
+# Giải pháp 4: Cài đặt Node.js với nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.0/install.sh | bash
+nvm install node
+nvm use node
+npm install
 ```
 
-#### Vercel Deployment Issues
+### Vấn đề Build
+
+Nếu gặp lỗi khi build:
+
 ```bash
-# Check build logs trên Vercel dashboard
-# Verify environment variables được set correctly
-# Ensure vercel.json configuration đúng
+# Xóa node_modules và package-lock.json
+rm -rf node_modules package-lock.json
+npm install
+
+# Build với CI=false
+CI=false npm run build
 ```
 
-### Debug Mode
-Set `NODE_ENV=development` trong environment variables để enable debug logs.
+### Vấn đề Firebase
 
-## 📞 Support & Contact
+Nếu gặp lỗi Firebase connection:
 
-- **Documentation**: [Wiki](https://github.com/your-repo/azota/wiki)
-- **Issues**: [GitHub Issues](https://github.com/your-repo/azota/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/azota/discussions)
-- **Email**: support@azota.edu.vn
+1. Kiểm tra file `.env` có đúng format không
+2. Đảm bảo Firebase project có Firestore và Authentication được kích hoạt
+3. Kiểm tra rules của Firestore database
+4. Verify API keys trong Firebase Console
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License
 
-## 🙏 Credits & Acknowledgments
+## 👥 Support
 
-- **React Team** - For the amazing React framework
-- **Firebase Team** - For the powerful backend infrastructure
-- **Vercel Team** - For seamless deployment platform
-- **Tailwind Labs** - For the utility-first CSS framework
-- **Lucide** - For the beautiful icon set
-
-### Third-party Libraries
-- [React](https://reactjs.org/) - UI Library
-- [Firebase](https://firebase.google.com/) - Backend Services
-- [Vercel](https://vercel.com/) - Deployment Platform
-- [TailwindCSS](https://tailwindcss.com/) - CSS Framework
-- [Lucide Icons](https://lucide.dev/) - Icon Library
-- [React Router](https://reactrouter.com/) - Routing
-- [Express.js](https://expressjs.com/) - Web Framework
+Để được hỗ trợ, vui lòng tạo issue trong repository hoặc liên hệ qua email: support@azota.edu.vn
 
 ---
 
-<div align="center">
-
-**[⬆ Back to Top](#azota-e-learning-system)**
-
-Made with ❤️ by the Azota Team
-
-![GitHub stars](https://img.shields.io/github/stars/your-repo/azota?style=social)
-![GitHub forks](https://img.shields.io/github/forks/your-repo/azota?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/your-repo/azota?style=social)
-
-</div>
+**Phiên bản**: 0.1.0  
+**Cập nhật lần cuối**: 2025-11-04

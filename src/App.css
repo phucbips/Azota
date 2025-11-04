@@ -1,68 +1,42 @@
-.App {
-  text-align: center;
+#root {
+  margin: 0 auto;
 }
 
-.App-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px;
-  color: white;
-  min-height: 60vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
 }
 
-.App-header h1 {
-  margin-bottom: 20px;
-  font-size: 3rem;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+.logo:hover {
+  filter: drop-shadow(0 0 2em #646cffaa);
 }
 
-.App-header p {
-  margin-bottom: 30px;
-  opacity: 0.9;
-  font-size: 1.2rem;
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-.status {
-  margin: 30px 0;
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
-.success {
-  background-color: #28a745;
-  color: white;
-  padding: 15px 30px;
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 1.1rem;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
 }
 
-.fix-info {
-  background-color: rgba(255,255,255,0.1);
-  padding: 20px;
-  border-radius: 10px;
-  margin-top: 30px;
-  max-width: 600px;
-  text-align: left;
+.card {
+  padding: 2em;
 }
 
-.fix-info h3 {
-  color: #ffd700;
-  margin-bottom: 15px;
-}
-
-.fix-info p {
-  margin: 10px 0;
-  font-size: 1rem;
-}
-
-.fix-info code {
-  background-color: rgba(0,0,0,0.3);
-  padding: 5px 10px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  color: #ffd700;
+.read-the-docs {
+  color: #888;
 }
