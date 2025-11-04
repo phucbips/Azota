@@ -4,6 +4,11 @@
   "installCommand": "npm install",
   "framework": "create-react-app",
   "outputDirectory": "build",
+  "functions": {
+    "api/*.js": {
+      "runtime": "@vercel/node"
+    }
+  },
   "headers": [
     {
       "source": "/api/(.*)",
