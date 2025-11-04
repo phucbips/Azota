@@ -52,17 +52,10 @@ const EnhancedButton = ({
     oscillator.stop(audioContext.currentTime + 0.1);
   };
 
-  // 📱 Haptic feedback
+  // 📱 Haptic feedback - disabled to prevent browser warnings
   const triggerHaptic = (intensity = 'medium') => {
-    if (!haptic || !navigator.vibrate) return;
-    
-    const patterns = {
-      light: 10,
-      medium: 25,
-      heavy: 50
-    };
-    
-    navigator.vibrate(patterns[intensity] || 25);
+    // Vibration disabled for cleaner user experience
+    // Previous attempt caused browser warnings about user gesture requirements
   };
 
   // 🌊 Ripple effect
