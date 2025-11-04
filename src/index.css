@@ -1,3 +1,8 @@
+/* TailwindCSS base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 /* Base styles and imports */
 body {
   margin: 0;
