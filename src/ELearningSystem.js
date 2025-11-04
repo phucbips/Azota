@@ -35,6 +35,9 @@ import {
 } from "firebase/firestore";
 // ⚡️ ĐÃ XÓA: import { getFunctions, httpsCallable } from 'firebase/functions';
 
+// ⚡️ CORS FIX: Import VERCEL_API_URL từ utils/firebase.js để tự động dùng cùng domain  
+import { VERCEL_API_URL } from './utils/firebase.js';
+
 // =====================================================
 // Firebase Configuration
 // =====================================================
@@ -54,8 +57,8 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 // ⚡️ ĐÃ XÓA: const functions = getFunctions(app);
 
-// ⚡️ MỚI: Thêm URL API Vercel của bạn
-const VERCEL_API_URL = "https://payos-proxy.vercel.app"; 
+// ⚡️ SỬA: Import VERCEL_API_URL từ firebase.js để tự động dùng cùng domain
+// const VERCEL_API_URL = "https://payos-proxy.vercel.app"; // XÓA hard-code 
 
 // =====================================================
 // Utility Functions
