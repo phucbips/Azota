@@ -2728,10 +2728,6 @@ const StudentDashboard = ({ user, onLogout }) => {
             >
               <Key size={20} /> Kích hoạt Key
             </EnhancedButton>
-              }`}
-            >
-              <Ticket size={20} /> Kích hoạt Key
-            </button>
           </div>
         </div>
       </div>
