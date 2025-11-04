@@ -356,10 +356,10 @@ export const useToast = () => {
   }, []);
 
   // Convenience methods
-  const success = useCallback((message, duration) => addToast(message, 'success', duration);
-  const error = useCallback((message, duration) => addToast(message, 'error', duration);
-  const warning = useCallback((message, duration) => addToast(message, 'warning', duration);
-  const info = useCallback((message, duration) => addToast(message, 'info', duration);
+  const success = useCallback((message, duration) => addToast(message, 'success', duration), []);
+  const error = useCallback((message, duration) => addToast(message, 'error', duration), []);
+  const warning = useCallback((message, duration) => addToast(message, 'warning', duration), []);
+  const info = useCallback((message, duration) => addToast(message, 'info', duration), []);
 
   return {
     toasts,

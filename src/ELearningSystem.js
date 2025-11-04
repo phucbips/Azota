@@ -16,6 +16,8 @@ import {
   DotsLoader
 } from './components/LoadingComponents';
 
+import KickedModal from './components/KickedModal';
+
 // Import validation hooks
 import { useFormValidation, useErrorHandler, useLoadingState, useAsyncOperation } from './hooks/useFormValidation';
 import { validationSchemas } from './utils/validation';
