@@ -4,9 +4,7 @@ import { Sparkles, BookOpen, Users, BarChart3, LogOut, ShoppingCart, Plus, Trash
 // =====================================================
 // Firebase SDK Imports
 // =====================================================
-import { initializeApp } from "firebase/app";
 import { 
-  getAuth, 
   onAuthStateChanged, 
   GoogleAuthProvider, 
   signInWithPopup, 
@@ -17,7 +15,6 @@ import {
   getIdTokenResult
 } from "firebase/auth";
 import { 
-  getFirestore, 
   doc, 
   getDoc, 
   setDoc, 
@@ -35,26 +32,8 @@ import {
 } from "firebase/firestore";
 // ⚡️ ĐÃ XÓA: import { getFunctions, httpsCallable } from 'firebase/functions';
 
-// ⚡️ CORS FIX: Import VERCEL_API_URL từ utils/firebase.js để tự động dùng cùng domain  
-import { VERCEL_API_URL } from './utils/firebase.js';
-
-// =====================================================
-// Firebase Configuration
-// =====================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyBLeBmdJ85IhfeJ7sGBHOlSjUmYJ6V_YIY",
-  authDomain: "thpt-chi-linh.firebaseapp.com",
-  projectId: "thpt-chi-linh",
-  storageBucket: "thpt-chi-linh.firebasestorage.app",
-  messagingSenderId: "59436766218",
-  appId: "1:59436766218:web:8621e33cc12f6129e6fbf3",
-  measurementId: "G-442TZLSK9J"
-};
-
-// Khởi tạo Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// ⚡️ CORS FIX: Import VERCEL_API_URL and Firebase services from utils/firebase.js
+import { auth, db, VERCEL_API_URL } from './utils/firebase.js';
 // ⚡️ ĐÃ XÓA: const functions = getFunctions(app);
 
 // ⚡️ SỬA: Import VERCEL_API_URL từ firebase.js để tự động dùng cùng domain
